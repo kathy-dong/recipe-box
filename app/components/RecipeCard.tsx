@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Recipe } from "@/lib/supabase";
+import { MEAL_TYPE_VALUES, labelForTag } from "@/lib/tags";
 import styles from "./RecipeCard.module.css";
 
 type Props = {
@@ -109,6 +110,7 @@ export default function RecipeCard({ recipe, isDeleting, onToggleFavorite, onEdi
             </span>
           )}
         </div>
+        <TagPills tags={recipe.tags} />
       </div>
 
       {/* Heart — top-right */}
@@ -120,6 +122,25 @@ export default function RecipeCard({ recipe, isDeleting, onToggleFavorite, onEdi
         {recipe.status === "favorite" ? <HeartFilled /> : <HeartOutline />}
       </button>
     </a>
+  );
+}
+
+function TagPills({ tags }: { tags: string[] }) {
+  if (!tags || tags.length === 0) return null;
+  // meal type tags first, then attributes
+  const sorted = [
+    ...tags.filter((t) => MEAL_TYPE_VALUES.has(t as never)),
+    ...tags.filter((t) => !MEAL_TYPE_VALUES.has(t as never)),
+  ];
+  const visible = sorted.slice(0, 4);
+  const overflow = sorted.length - visible.length;
+  return (
+    <div className={styles.tagPills}>
+      {visible.map((t) => (
+        <span key={t} className={styles.tagPill}>{labelForTag(t)}</span>
+      ))}
+      {overflow > 0 && <span className={styles.tagPill}>+{overflow}</span>}
+    </div>
   );
 }
 

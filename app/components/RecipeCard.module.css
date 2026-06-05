@@ -1,25 +1,24 @@
 .card {
   display: flex;
   flex-direction: column;
-  background: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  overflow: hidden;
   text-decoration: none;
   color: inherit;
   position: relative;
-  box-shadow: var(--shadow);
-  transition: box-shadow 0.2s ease, transform 0.2s ease, opacity 0.3s ease;
+  cursor: pointer;
+  transition: opacity 0.3s ease;
 }
 
-.card:hover {
-  box-shadow: var(--shadow-hover);
-  transform: translateY(-2px);
+.card:hover .title {
+  color: #999;
+  transition: color 0.2s ease;
+}
+
+.title {
+  transition: color 0.2s ease;
 }
 
 .deleting {
   opacity: 0;
-  transform: scale(0.97);
   pointer-events: none;
 }
 
@@ -90,10 +89,10 @@
 .trashBtn,
 .heart {
   position: absolute;
-  background: rgba(255, 255, 255, 0.88);
+  background: rgba(0, 0, 0, 0.35);
   border-radius: 50%;
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -101,7 +100,14 @@
   cursor: pointer;
   backdrop-filter: blur(4px);
   padding: 0;
-  transition: opacity 0.15s ease, background 0.15s ease, transform 0.15s ease;
+  color: #fff;
+  transition: opacity 0.15s ease, background 0.15s ease;
+}
+
+.editBtn:hover,
+.trashBtn:hover,
+.heart:hover {
+  background: rgba(0, 0, 0, 0.55);
 }
 
 /* Heart — top-right of image */
@@ -111,39 +117,24 @@
   opacity: 1;
 }
 
-.heart:hover {
-  background: rgba(255, 255, 255, 1);
-  transform: scale(1.1);
-}
-
 /* Edit — top-left of image; hidden on desktop until hover */
 .editBtn {
   top: 10px;
   left: 10px;
   opacity: 0;
-  color: var(--text-primary);
 }
 
 /* Trash — below edit */
 .trashBtn {
-  top: 50px;
+  top: 48px;
   left: 10px;
   opacity: 0;
-  color: #dc2626;
 }
 
 /* Show edit/trash on card hover (desktop) */
 .card:hover .editBtn,
 .card:hover .trashBtn {
   opacity: 1;
-}
-
-.editBtn:hover {
-  background: rgba(255, 255, 255, 1);
-}
-
-.trashBtn:hover {
-  background: rgba(255, 255, 255, 1);
 }
 
 /* Always show on touch devices */
@@ -156,16 +147,16 @@
 
 /* Card body */
 .body {
-  padding: 14px 14px 12px;
+  padding: 8px 0 10px;
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .title {
   font-family: var(--font-serif);
-  font-size: 17px;
+  font-size: 20px;
   font-weight: 400;
   line-height: 1.35;
   display: -webkit-box;
@@ -176,9 +167,9 @@
 }
 
 .author {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--text-muted);
-  margin-top: 2px;
+  margin-top: 1px;
 }
 
 .meta {
@@ -186,14 +177,14 @@
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
-  margin-top: 6px;
+  margin-top: 4px;
 }
 
 .cookTime {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 12px;
+  font-size: 14px;
   color: var(--text-muted);
 }
 
@@ -201,7 +192,7 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .stars {
@@ -211,4 +202,20 @@
 
 .ratingCount {
   color: var(--text-muted);
+}
+
+.tagPills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.tagPill {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: #f0ede9;
+  color: #777;
+  white-space: nowrap;
 }

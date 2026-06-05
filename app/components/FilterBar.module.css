@@ -1,0 +1,83 @@
+.bar {
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+.scroll {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.pill {
+  flex-shrink: 0;
+  padding: 5px 13px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  background: #f0ede9;
+  color: #555;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  font-family: var(--font-sans);
+  white-space: nowrap;
+}
+
+.pill:hover {
+  background: #e5e0da;
+}
+
+.pillActive {
+  background: var(--accent);
+  color: #fff;
+}
+
+.pillActive:hover {
+  background: var(--accent-hover);
+}
+
+.divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  flex-shrink: 0;
+  margin: 0 4px;
+}
+
+.clearBtn {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  font-size: 13px;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  text-decoration: underline;
+  margin-left: 4px;
+  padding: 5px 4px;
+  white-space: nowrap;
+}
+
+.clearBtn:hover {
+  color: var(--text-primary);
+}
+
+@media (max-width: 640px) {
+  .inner {
+    padding: 0 1.25rem;
+  }
+}

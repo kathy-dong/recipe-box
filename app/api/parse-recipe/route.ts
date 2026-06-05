@@ -196,10 +196,13 @@ function cleanHtml(html: string): string {
     .slice(0, 15000);
 }
 
+const TAG_TAXONOMY = `Meal type tags (use one or more if applicable): "breakfast", "lunch", "dinner", "appetizer-side", "dessert", "snack"
+Attribute tags (use any that apply): "quick" (under 30 min total), "healthy", "indulgent", "meal-prep"`;
+
 async function extractWithGemini(
   html: string,
   missingFields: string[]
-): Promise<Record<string, string | null>> {
+): Promise<Record<string, unknown>> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return {};
 
@@ -207,7 +210,14 @@ async function extractWithGemini(
   const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
   const cleaned = cleanHtml(html);
-  const prompt = `Extract recipe metadata from this webpage text. Return ONLY a JSON object with these fields: ${missingFields.join(", ")}. If a field isn't present, use null. Do not fabricate data.
+  const metaFields = missingFields.filter((f) => f !== "suggested_tags");
+  const prompt = `Extract recipe metadata from this webpage text.
+
+Return ONLY a JSON object with these fields:
+${metaFields.length > 0 ? `- ${metaFields.join(", ")} (use null if not found, do not fabricate)` : ""}
+- suggested_tags: array of applicable tags from this taxonomy:
+${TAG_TAXONOMY}
+  Return only the tag values that clearly apply based on the recipe title, description, cook time, and ingredients. Return an empty array if nothing clearly fits.
 
 Webpage text:
 ${cleaned}
@@ -255,7 +265,7 @@ export async function POST(request: NextRequest) {
   const og = extractOgData(html);
   const ld = extractJsonLd(html);
 
-  const merged: Record<string, string | null | boolean> = {
+  const merged: Record<string, unknown> = {
     title: ld.title ?? og.title,
     image_url: ld.image_url ?? og.image_url,
     author: ld.author && !isPublisher(ld.author, source_site) ? ld.author : null,
@@ -265,11 +275,12 @@ export async function POST(request: NextRequest) {
     description: ld.description ?? og.description,
     source_site,
     is_video,
+    suggested_tags: [] as string[],
   };
 
-  // Step 3: Gemini fallback only if title or image still missing
+  // Step 3: Gemini fallback — called when title or image missing; also always fetches tag suggestions
   if (!merged.title || !merged.image_url) {
-    const missing = [];
+    const missing: string[] = ["suggested_tags"];
     if (!merged.title) missing.push("title");
     if (!merged.image_url) missing.push("image_url");
     if (!merged.author) missing.push("author");
@@ -280,7 +291,11 @@ export async function POST(request: NextRequest) {
 
     const gemini = await extractWithGemini(html, missing);
     for (const key of missing) {
-      if (gemini[key] && !merged[key]) merged[key] = gemini[key];
+      if (key === "suggested_tags") {
+        if (Array.isArray(gemini.suggested_tags)) merged.suggested_tags = gemini.suggested_tags;
+      } else if (gemini[key] && !merged[key]) {
+        merged[key] = gemini[key];
+      }
     }
   }
 

@@ -24,6 +24,7 @@ export default function EditRecipeModal({ recipe, onClose, onSaved }: Props) {
     image_url: recipe.image_url ?? "",
     description: recipe.description ?? "",
     status: recipe.status,
+    tags: recipe.tags ?? [],
   };
 
   async function handleSave(values: RecipeFormValues) {
@@ -40,6 +41,7 @@ export default function EditRecipeModal({ recipe, onClose, onSaved }: Props) {
         image_url: values.image_url.trim() || null,
         description: values.description.trim() || null,
         status: values.status,
+        tags: values.tags,
       })
       .eq("id", recipe.id)
       .select()
@@ -72,6 +74,7 @@ export default function EditRecipeModal({ recipe, onClose, onSaved }: Props) {
           onCancel={onClose}
           submitLabel="Save Changes"
           saving={saving}
+          statusOptions={["to_try", "made_it", "favorite"]}
         />
       </div>
     </div>

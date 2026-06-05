@@ -26,6 +26,7 @@ const EMPTY_FORM: RecipeFormValues = {
   image_url: "",
   description: "",
   status: "to_try",
+  tags: [],
 };
 
 type Props = {
@@ -73,6 +74,7 @@ export default function AddRecipeModal({ onClose, onAdded }: Props) {
           image_url: data.image_url ?? "",
           description: data.description ?? "",
           status: "to_try",
+          tags: data.suggested_tags ?? [],
         });
       }
     } catch {
@@ -114,7 +116,7 @@ export default function AddRecipeModal({ onClose, onAdded }: Props) {
         source_site: parsed?.source_site ?? null,
         is_video: parsed?.is_video ?? false,
         status: values.status,
-        tags: [],
+        tags: values.tags,
       })
       .select()
       .single();

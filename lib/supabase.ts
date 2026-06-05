@@ -17,7 +17,7 @@ export type Recipe = {
   description: string | null;
   source_site: string | null;
   tags: string[];
-  status: "to_try" | "favorite";
+  status: "to_try" | "made_it" | "favorite";
   is_video: boolean;
   added_at: string;
 };
