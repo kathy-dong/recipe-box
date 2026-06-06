@@ -66,9 +66,16 @@ export default function RecipeCard({ recipe, isDeleting, onToggleFavorite, onEdi
           </div>
         )}
         {recipe.source_site && (
-          <span className={styles.sourceBadge}>{recipe.source_site}</span>
+          <span className={styles.sourceBadge}>
+            {recipe.is_video && <span className={styles.sourceBadgePlay}>▶</span>}
+            {recipe.source_site}
+          </span>
         )}
-        {recipe.is_video && <span className={styles.playIcon}>▶</span>}
+        {recipe.is_video && (
+          <div className={styles.playButton} aria-hidden="true">
+            <span className={styles.playTriangle}>▶</span>
+          </div>
+        )}
 
         {/* Edit button — top-left */}
         <button

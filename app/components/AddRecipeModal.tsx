@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import type { Recipe } from "@/lib/supabase";
+import type { ToastItem } from "./Toast";
 import RecipeForm, { type RecipeFormValues } from "./RecipeForm";
 import styles from "./AddRecipeModal.module.css";
 
@@ -16,6 +17,7 @@ type ParsedData = {
   description?: string | null;
   source_site?: string | null;
   is_video?: boolean;
+  suggested_tags?: string[];
 };
 
 const EMPTY_FORM: RecipeFormValues = {
@@ -32,15 +34,15 @@ const EMPTY_FORM: RecipeFormValues = {
 type Props = {
   onClose: () => void;
   onAdded: (recipe: Recipe) => void;
+  showToast: (message: string, type?: ToastItem["type"]) => void;
 };
 
-export default function AddRecipeModal({ onClose, onAdded }: Props) {
+export default function AddRecipeModal({ onClose, onAdded, showToast }: Props) {
   const [url, setUrl] = useState("");
   const [fetching, setFetching] = useState(false);
   const [fetchError, setFetchError] = useState("");
   const [parsed, setParsed] = useState<ParsedData | null>(null);
   const [formValues, setFormValues] = useState<RecipeFormValues>(EMPTY_FORM);
-  const [duplicateError, setDuplicateError] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const showForm = parsed !== null || fetchError !== "";
@@ -49,7 +51,6 @@ export default function AddRecipeModal({ onClose, onAdded }: Props) {
     if (!url.trim()) return;
     setFetching(true);
     setFetchError("");
-    setDuplicateError(false);
     setParsed(null);
 
     try {
@@ -61,10 +62,17 @@ export default function AddRecipeModal({ onClose, onAdded }: Props) {
       const data = await res.json();
 
       if (!res.ok) {
-        setFetchError("Couldn't read that page — you can fill in the details manually.");
+        const msg = "Couldn't fetch that page — try filling in the details manually.";
+        setFetchError(msg);
+        showToast(msg, "error");
         setParsed({});
         setFormValues(EMPTY_FORM);
       } else {
+        // Detect Instagram blocking: parsed successfully but no title returned
+        if (data.source_site === "Instagram" && !data.title) {
+          showToast("Instagram blocks automatic parsing — please fill in the details manually.", "error");
+        }
+
         setParsed(data);
         setFormValues({
           title: data.title ?? "",
@@ -78,7 +86,9 @@ export default function AddRecipeModal({ onClose, onAdded }: Props) {
         });
       }
     } catch {
-      setFetchError("Couldn't read that page — you can fill in the details manually.");
+      const msg = "Couldn't fetch that page — try filling in the details manually.";
+      setFetchError(msg);
+      showToast(msg, "error");
       setParsed({});
       setFormValues(EMPTY_FORM);
     } finally {
@@ -88,7 +98,6 @@ export default function AddRecipeModal({ onClose, onAdded }: Props) {
 
   async function handleSave(values: RecipeFormValues) {
     setSaving(true);
-    setDuplicateError(false);
 
     const { data: existing } = await supabase
       .from("recipes")
@@ -97,7 +106,7 @@ export default function AddRecipeModal({ onClose, onAdded }: Props) {
       .maybeSingle();
 
     if (existing) {
-      setDuplicateError(true);
+      showToast("This recipe is already in your box", "error");
       setSaving(false);
       return;
     }
@@ -124,7 +133,11 @@ export default function AddRecipeModal({ onClose, onAdded }: Props) {
     setSaving(false);
 
     if (error || !data) {
-      if (error?.code === "23505") setDuplicateError(true);
+      if (error?.code === "23505") {
+        showToast("This recipe is already in your box", "error");
+      } else {
+        showToast("Something went wrong — please try again.", "error");
+      }
       return;
     }
 
@@ -136,7 +149,12 @@ export default function AddRecipeModal({ onClose, onAdded }: Props) {
     <div className={styles.overlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className={styles.modal}>
         <div className={styles.header}>
-          <h2 className={styles.modalTitle}>Add a Recipe</h2>
+          <div className={styles.titleRow}>
+            <h2 className={styles.modalTitle}>Add a Recipe</h2>
+            {parsed?.is_video && (
+              <span className={styles.videoBadge}>▶ Video</span>
+            )}
+          </div>
           <button className={styles.closeBtn} onClick={onClose} aria-label="Close">✕</button>
         </div>
 
@@ -160,7 +178,6 @@ export default function AddRecipeModal({ onClose, onAdded }: Props) {
         </div>
 
         {fetchError && <p className={styles.errorMsg}>{fetchError}</p>}
-        {duplicateError && <p className={styles.duplicateMsg}>This recipe is already in your box!</p>}
 
         {showForm && (
           <RecipeForm

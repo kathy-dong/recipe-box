@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import type { Recipe } from "@/lib/supabase";
+import type { ToastItem } from "./Toast";
 import RecipeForm, { type RecipeFormValues } from "./RecipeForm";
 import styles from "./EditRecipeModal.module.css";
 
@@ -10,11 +11,11 @@ type Props = {
   recipe: Recipe;
   onClose: () => void;
   onSaved: (updated: Recipe) => void;
+  showToast: (message: string, type?: ToastItem["type"]) => void;
 };
 
-export default function EditRecipeModal({ recipe, onClose, onSaved }: Props) {
+export default function EditRecipeModal({ recipe, onClose, onSaved, showToast }: Props) {
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
 
   const initialValues: RecipeFormValues = {
     title: recipe.title,
@@ -29,7 +30,6 @@ export default function EditRecipeModal({ recipe, onClose, onSaved }: Props) {
 
   async function handleSave(values: RecipeFormValues) {
     setSaving(true);
-    setError("");
 
     const { data, error: err } = await supabase
       .from("recipes")
@@ -50,7 +50,7 @@ export default function EditRecipeModal({ recipe, onClose, onSaved }: Props) {
     setSaving(false);
 
     if (err || !data) {
-      setError("Couldn't save changes — please try again.");
+      showToast("Something went wrong — please try again.", "error");
       return;
     }
 
@@ -65,8 +65,6 @@ export default function EditRecipeModal({ recipe, onClose, onSaved }: Props) {
           <h2 className={styles.modalTitle}>Edit Recipe</h2>
           <button className={styles.closeBtn} onClick={onClose} aria-label="Close">✕</button>
         </div>
-
-        {error && <p className={styles.errorMsg}>{error}</p>}
 
         <RecipeForm
           initialValues={initialValues}

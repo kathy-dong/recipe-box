@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import styles from "./Toast.module.css";
 
 export type ToastItem = {
@@ -24,16 +24,29 @@ export default function Toast({ toasts, onDismiss }: Props) {
   );
 }
 
-function ToastMessage({ toast, onDismiss }: { toast: ToastItem; onDismiss: (id: number) => void }) {
+function ToastMessage({
+  toast,
+  onDismiss,
+}: {
+  toast: ToastItem;
+  onDismiss: (id: number) => void;
+}) {
+  const [exiting, setExiting] = useState(false);
+
+  function dismiss() {
+    setExiting(true);
+    setTimeout(() => onDismiss(toast.id), 250);
+  }
+
   useEffect(() => {
-    const timer = setTimeout(() => onDismiss(toast.id), 4000);
+    const timer = setTimeout(() => dismiss(), 3000);
     return () => clearTimeout(timer);
-  }, [toast.id, onDismiss]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [toast.id]);
 
   return (
-    <div className={`${styles.toast} ${toast.type === "error" ? styles.error : styles.success}`}>
-      <span>{toast.message}</span>
-      <button className={styles.dismiss} onClick={() => onDismiss(toast.id)} aria-label="Dismiss">✕</button>
+    <div className={`${styles.toast} ${exiting ? styles.exiting : ""}`}>
+      {toast.message}
     </div>
   );
 }

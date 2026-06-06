@@ -119,12 +119,25 @@
   line-height: 1;
 }
 
+.siteTitleWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 .siteTitle {
   font-family: var(--font-serif);
   font-size: 28px;
   font-weight: 400;
   color: var(--text-primary);
   letter-spacing: -0.01em;
+}
+
+.recipeCount {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--text-light);
+  margin: 0;
 }
 
 .addBtn {
@@ -206,23 +219,38 @@
   padding: 32px 2rem;
 }
 
-.loading {
-  text-align: center;
-  color: var(--text-muted);
-  padding: 80px 2rem;
-  font-size: 15px;
-}
-
 .empty {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   padding: 80px 2rem;
+  text-align: center;
+}
+
+.emptyIcon {
+  font-size: 48px;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.emptyTitle {
+  font-family: var(--font-sans);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.emptySub {
+  font-family: var(--font-sans);
+  font-size: 14px;
   color: var(--text-muted);
+  margin: 0;
 }
 
 .emptyAddBtn {
+  margin-top: 4px;
   padding: 10px 20px;
   background: var(--accent);
   color: #fff;
@@ -232,6 +260,30 @@
   border: none;
   cursor: pointer;
   font-family: var(--font-sans);
+  transition: background 0.15s;
+}
+
+.emptyAddBtn:hover {
+  background: var(--accent-hover);
+}
+
+.emptyClearBtn {
+  margin-top: 4px;
+  padding: 9px 18px;
+  background: none;
+  color: var(--accent);
+  border: 1.5px solid var(--accent);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  transition: background 0.15s, color 0.15s;
+}
+
+.emptyClearBtn:hover {
+  background: var(--accent);
+  color: #fff;
 }
 
 /* Mobile FAB — hidden on desktop */
@@ -279,6 +331,10 @@
 
   .siteTitle {
     font-size: 21px;
+  }
+
+  .recipeCount {
+    font-size: 12px;
   }
 
   .addBtn {

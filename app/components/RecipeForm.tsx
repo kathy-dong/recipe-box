@@ -38,7 +38,7 @@ export default function RecipeForm({
   onCancel,
   submitLabel = "Save",
   saving = false,
-  statusOptions = ["to_try", "favorite"],
+  statusOptions = ["to_try", "made_it", "favorite"],
 }: Props) {
   const [title, setTitle] = useState(initialValues.title);
   const [author, setAuthor] = useState(initialValues.author);

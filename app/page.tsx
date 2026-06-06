@@ -8,6 +8,7 @@ import AddRecipeModal from "./components/AddRecipeModal";
 import EditRecipeModal from "./components/EditRecipeModal";
 import DeleteConfirmDialog from "./components/DeleteConfirmDialog";
 import FilterBar from "./components/FilterBar";
+import SkeletonGrid from "./components/SkeletonGrid";
 import Toast, { type ToastItem } from "./components/Toast";
 import styles from "./page.module.css";
 
@@ -59,11 +60,12 @@ export default function Home() {
   // Tab counts (unaffected by tag/search filters)
   const allCount = recipes.length;
   const toTryCount = recipes.filter((r) => r.status === "to_try").length;
-  const madeItCount = recipes.filter((r) => r.status === "made_it").length;
+  const madeItCount = recipes.filter((r) => r.status === "made_it" || r.status === "favorite").length;
   const favCount = recipes.filter((r) => r.status === "favorite").length;
 
   const displayRecipes = recipes.filter((r) => {
-    if (tab !== "all" && r.status !== tab) return false;
+    if (tab === "made_it" && r.status !== "made_it" && r.status !== "favorite") return false;
+    if (tab !== "all" && tab !== "made_it" && r.status !== tab) return false;
     if (activeTags.length > 0 && !activeTags.every((t) => r.tags.includes(t))) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -80,6 +82,7 @@ export default function Home() {
 
   function handleAdded(recipe: Recipe) {
     setRecipes((prev) => [recipe, ...prev]);
+    showToast("Recipe added!", "success");
   }
 
   async function handleToggleFavorite(id: string) {
@@ -88,13 +91,16 @@ export default function Home() {
     // to_try → favorite, made_it → favorite, favorite → made_it
     const newStatus: Recipe["status"] =
       recipe.status === "favorite" ? "made_it" : "favorite";
+    const isFavoriting = newStatus === "favorite";
 
     setRecipes((prev) => prev.map((r) => (r.id === id ? { ...r, status: newStatus } : r)));
 
     const { error } = await supabase.from("recipes").update({ status: newStatus }).eq("id", id);
     if (error) {
       setRecipes((prev) => prev.map((r) => (r.id === id ? { ...r, status: recipe.status } : r)));
-      showToast("Couldn't update — please try again.");
+      showToast("Something went wrong — please try again.", "error");
+    } else {
+      showToast(isFavoriting ? "Added to favorites ♥" : "Removed from favorites", "success");
     }
   }
 
@@ -105,6 +111,7 @@ export default function Home() {
   function handleEditSaved(updated: Recipe) {
     setRecipes((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
     setEditingRecipe(null);
+    showToast("Recipe updated!", "success");
   }
 
   function handleDeleteOpen(recipe: Recipe) {
@@ -138,7 +145,9 @@ export default function Home() {
         if (prev.find((r) => r.id === id)) return prev;
         return [snapshot, ...prev];
       });
-      showToast("Couldn't delete — please try again.");
+      showToast("Couldn't delete — please try again.", "error");
+    } else {
+      showToast("Recipe deleted", "success");
     }
   }
 
@@ -166,7 +175,14 @@ export default function Home() {
             </div>
           ) : (
             <>
-              <h1 className={styles.siteTitle}>Sam & Kathy&apos;s Recipes</h1>
+              <div className={styles.siteTitleWrap}>
+                <h1 className={styles.siteTitle}>Sam & Kathy&apos;s Recipes</h1>
+                {!loading && (
+                  <p className={styles.recipeCount}>
+                    {recipes.length} recipe{recipes.length !== 1 ? "s" : ""}
+                  </p>
+                )}
+              </div>
               <div className={styles.headerRight}>
                 <div className={styles.desktopSearch}>
                   <SearchIcon />
@@ -224,19 +240,32 @@ export default function Home() {
       <FilterBar activeTags={activeTags} onChange={setActiveTags} />
 
       {loading ? (
-        <div className={styles.loading}>Loading recipes…</div>
+        <SkeletonGrid />
+      ) : recipes.length === 0 ? (
+        <div className={styles.empty}>
+          <span className={styles.emptyIcon}>🍳</span>
+          <p className={styles.emptyTitle}>No recipes yet!</p>
+          <p className={styles.emptySub}>Add your first recipe to get started.</p>
+          <button className={styles.emptyAddBtn} onClick={() => setAddOpen(true)}>
+            Add a recipe
+          </button>
+        </div>
+      ) : displayRecipes.length === 0 && searchQuery.trim() ? (
+        <div className={styles.empty}>
+          <p className={styles.emptyTitle}>No recipes found for &ldquo;{searchQuery.trim()}&rdquo;</p>
+          <button className={styles.emptyClearBtn} onClick={() => setSearchQuery("")}>
+            Clear search
+          </button>
+        </div>
       ) : displayRecipes.length === 0 ? (
         <div className={styles.empty}>
-          {recipes.length === 0 ? (
-            <>
-              <p>No recipes yet.</p>
-              <button className={styles.emptyAddBtn} onClick={() => setAddOpen(true)}>
-                Add your first recipe
-              </button>
-            </>
-          ) : (
-            <p>No recipes match your filters.</p>
-          )}
+          <p className={styles.emptyTitle}>No recipes match these filters</p>
+          <button
+            className={styles.emptyClearBtn}
+            onClick={() => { setActiveTags([]); setTab("all"); }}
+          >
+            Clear filters
+          </button>
         </div>
       ) : (
         <div className={styles.grid}>
@@ -258,13 +287,14 @@ export default function Home() {
       </button>
 
       {addOpen && (
-        <AddRecipeModal onClose={() => setAddOpen(false)} onAdded={handleAdded} />
+        <AddRecipeModal onClose={() => setAddOpen(false)} onAdded={handleAdded} showToast={showToast} />
       )}
       {editingRecipe && (
         <EditRecipeModal
           recipe={editingRecipe}
           onClose={() => setEditingRecipe(null)}
           onSaved={handleEditSaved}
+          showToast={showToast}
         />
       )}
       {deletingRecipe && (
