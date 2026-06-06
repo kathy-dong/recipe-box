@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { TAG_TAXONOMY, suggestTagsFromMetadata, mergeTags } from "@/lib/tag-rules";
 
 const USER_AGENT =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
@@ -276,8 +277,6 @@ function cleanHtml(html: string): string {
     .slice(0, 15000);
 }
 
-const TAG_TAXONOMY = `Meal type tags (use one or more if applicable): "breakfast", "lunch", "dinner", "appetizer-side", "dessert", "snack"
-Attribute tags (use any that apply): "quick" (under 30 min total), "healthy", "indulgent", "meal-prep"`;
 
 async function extractWithGemini(html: string, missingFields: string[]): Promise<Record<string, unknown>> {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -399,6 +398,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Step 4: Gemini fallback — only when title or image_url still missing
+  let geminiTags: string[] = [];
   if (!merged.title || !merged.image_url) {
     const missing: string[] = ["suggested_tags"];
     if (!merged.title) missing.push("title");
@@ -414,12 +414,22 @@ export async function POST(request: NextRequest) {
     const gemini = await extractWithGemini(html, missing);
     for (const key of missing) {
       if (key === "suggested_tags") {
-        if (Array.isArray(gemini.suggested_tags)) merged.suggested_tags = gemini.suggested_tags;
+        if (Array.isArray(gemini.suggested_tags)) geminiTags = gemini.suggested_tags;
       } else if (gemini[key] && !merged[key]) {
         merged[key] = gemini[key];
       }
     }
   }
+
+  // Rule-based tags (applied after all metadata is finalized, so cook_time is fully resolved)
+  const ruleTags = suggestTagsFromMetadata({
+    title: merged.title as string | null,
+    description: merged.description as string | null,
+    cook_time: merged.cook_time as string | null,
+    source_site: merged.source_site as string | null,
+  });
+
+  merged.suggested_tags = mergeTags(ruleTags, geminiTags);
 
   return NextResponse.json(merged);
 }

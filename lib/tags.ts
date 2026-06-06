@@ -1,14 +1,13 @@
 export type TagValue =
-  | "breakfast" | "lunch" | "dinner" | "appetizer-side" | "dessert" | "snack"
-  | "quick" | "healthy" | "indulgent" | "meal-prep";
+  | "breakfast" | "lunch" | "dinner" | "appetizer-side" | "dessert"
+  | "quick" | "healthy" | "indulgent" | "meal-prep" | "asian";
 
 export const MEAL_TYPE_TAGS: { label: string; value: TagValue }[] = [
   { label: "Breakfast", value: "breakfast" },
   { label: "Lunch", value: "lunch" },
   { label: "Dinner", value: "dinner" },
-  { label: "Appetizer / Side", value: "appetizer-side" },
+  { label: "Appetizer / Snack", value: "appetizer-side" },
   { label: "Dessert", value: "dessert" },
-  { label: "Snack", value: "snack" },
 ];
 
 export const ATTRIBUTE_TAGS: { label: string; value: TagValue }[] = [
@@ -16,6 +15,7 @@ export const ATTRIBUTE_TAGS: { label: string; value: TagValue }[] = [
   { label: "Healthy", value: "healthy" },
   { label: "Indulgent", value: "indulgent" },
   { label: "Meal Prep", value: "meal-prep" },
+  { label: "Asian", value: "asian" },
 ];
 
 export const ALL_TAGS = [...MEAL_TYPE_TAGS, ...ATTRIBUTE_TAGS];
