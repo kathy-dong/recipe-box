@@ -80,7 +80,6 @@ export default function SharePage() {
             <a
               href={`javascript:${bookmarkletJs}`}
               className={styles.bookmarklet}
-              onClick={(e) => e.preventDefault()}
               title="Drag me to your bookmarks bar"
             >
               📌 Save to Recipe Box
