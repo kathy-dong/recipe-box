@@ -5,7 +5,11 @@ export const metadata = { title: "Add Recipes Anywhere — Sam & Kathy's Recipes
 export default function SharePage() {
   const siteUrl =
     process.env.NEXT_PUBLIC_SITE_URL ??
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+    (process.env.VERCEL_PROJECT_PRODUCTION_URL
+      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+      : process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : "http://localhost:3000");
 
   const key = process.env.QUICK_ADD_KEY ?? "YOUR_KEY_HERE";
   const apiUrl = `${siteUrl}/api/quick-add`;
