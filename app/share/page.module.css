@@ -146,6 +146,11 @@
   flex-shrink: 0;
 }
 
+.codeVal {
+  color: var(--text-primary);
+  word-break: break-all;
+}
+
 /* Tip box */
 .tip {
   margin-top: 20px;

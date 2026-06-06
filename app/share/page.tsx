@@ -43,27 +43,32 @@ export default function SharePage() {
           </p>
 
           <ol className={styles.steps}>
-            <li>Open the <strong>Shortcuts</strong> app on your iPhone and tap <strong>+</strong> to create a new Shortcut.</li>
-            <li>Add the action <strong>"Receive input from Share Sheet"</strong> — set it to accept <em>URLs</em>. (Search "Receive" in the action library.)</li>
-            <li>
-              Add <strong>"Get Contents of URL"</strong> and configure it:
+            <li>Open the <strong>Shortcuts</strong> app on your iPhone and tap <strong>+</strong> in the top right to create a new Shortcut.</li>
+            <li>Tap <strong>"Search Actions"</strong> at the bottom. Type <em>URL</em> and tap <strong>"Get Contents of URL"</strong>.</li>
+            <li>Tap the blue URL text in the action and paste this URL:
               <div className={styles.codeBlock}>
-                <div className={styles.codeLine}><span className={styles.codeKey}>Method</span> POST</div>
-                <div className={styles.codeLine}><span className={styles.codeKey}>URL</span> {apiUrl}</div>
-                <div className={styles.codeLine}><span className={styles.codeKey}>Request Body</span> JSON</div>
-                <div className={styles.codeIndent}>
-                  <div className={styles.codeLine}><span className={styles.codeKey}>url</span> <em>Shortcut Input</em> (tap the token)</div>
-                  <div className={styles.codeLine}><span className={styles.codeKey}>key</span> {key}</div>
-                </div>
+                <div className={styles.codeLine}><span className={styles.codeVal}>{apiUrl}</span></div>
               </div>
             </li>
-            <li>Add <strong>"Get Dictionary Value"</strong> — Key: <code>message</code>, Dictionary: result of previous step.</li>
-            <li>Add <strong>"Show Notification"</strong> — Body: result of previous step.</li>
-            <li>Name it <strong>"Save Recipe"</strong> and tap Done.</li>
+            <li>
+              Tap the <strong>arrow ›</strong> on the right side to expand the action and configure it:
+              <div className={styles.codeBlock}>
+                <div className={styles.codeLine}><span className={styles.codeKey}>Method</span> POST</div>
+                <div className={styles.codeLine}><span className={styles.codeKey}>Request Body</span> JSON</div>
+                <div className={styles.codeIndent}>
+                  <div className={styles.codeLine}><span className={styles.codeKey}>url</span> tap <strong>Add New Field → Text</strong>, key = <code>url</code>, value = <em>Shortcut Input</em> variable</div>
+                  <div className={styles.codeLine}><span className={styles.codeKey}>key</span> tap <strong>Add New Field → Text</strong>, key = <code>key</code>, value = <code>{key}</code></div>
+                </div>
+              </div>
+              For the <code>url</code> value: tap the value field and select <strong>Shortcut Input</strong> from the variables that appear above the keyboard.
+            </li>
+            <li>Tap <strong>"Search Actions"</strong> again. Type <em>notification</em> and tap <strong>"Show Notification"</strong>. Clear any default text and type <em>Recipe saved! 🍳</em></li>
+            <li>Tap the <strong>dropdown arrow ⌄</strong> at the top next to the shortcut name. Tap <strong>Rename</strong> and type <em>Save Recipe</em>.</li>
+            <li>Tap the <strong>ⓘ button</strong> at the bottom center of the screen. Turn on <strong>"Show in Share Sheet"</strong> and set it to accept <em>URLs</em>. Tap Done.</li>
           </ol>
 
           <div className={styles.tip}>
-            When you&apos;re on any recipe page, tap <strong>Share → Save Recipe</strong> and it&apos;ll be in your box in seconds.
+            You&apos;re all set! Open Safari or any app, tap <strong>Share</strong> on any recipe page, and tap <strong>"Save Recipe"</strong>. Your recipe will appear in the box within seconds.
           </div>
         </section>
 
