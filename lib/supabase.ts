@@ -20,4 +20,38 @@ export type Recipe = {
   status: "to_try" | "made_it" | "favorite";
   is_video: boolean;
   added_at: string;
+  notes: string | null;
+  ingredients: string[];
+};
+
+export type PersonalRating = {
+  id: string;
+  recipe_id: string;
+  person: string;
+  rating: number;
+  rated_at: string;
+};
+
+export type CookLogEntry = {
+  id: string;
+  recipe_id: string;
+  person: string | null;
+  cooked_on: string;
+  notes: string | null;
+  created_at: string;
+  cook_log_photos: CookLogPhoto[];
+};
+
+export type CookLogPhoto = {
+  id: string;
+  cook_log_id: string;
+  photo_url: string;
+  caption: string | null;
+  uploaded_at: string;
+};
+
+export type CookSummary = {
+  recipe_id: string;
+  count: number;
+  last_cooked: string | null;
 };

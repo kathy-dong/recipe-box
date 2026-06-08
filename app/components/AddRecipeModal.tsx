@@ -18,6 +18,7 @@ type ParsedData = {
   source_site?: string | null;
   is_video?: boolean;
   suggested_tags?: string[];
+  ingredients?: string[];
 };
 
 const EMPTY_FORM: RecipeFormValues = {
@@ -29,6 +30,8 @@ const EMPTY_FORM: RecipeFormValues = {
   description: "",
   status: "to_try",
   tags: [],
+  notes: "",
+  ingredients: "",
 };
 
 type Props = {
@@ -68,7 +71,6 @@ export default function AddRecipeModal({ onClose, onAdded, showToast }: Props) {
         setParsed({});
         setFormValues(EMPTY_FORM);
       } else {
-        // Detect Instagram blocking: parsed successfully but no title returned
         if (data.source_site === "Instagram" && !data.title) {
           showToast("Instagram blocks automatic parsing — please fill in the details manually.", "error");
         }
@@ -83,6 +85,8 @@ export default function AddRecipeModal({ onClose, onAdded, showToast }: Props) {
           description: data.description ?? "",
           status: "to_try",
           tags: data.suggested_tags ?? [],
+          notes: "",
+          ingredients: (data.ingredients ?? []).join("\n"),
         });
       }
     } catch {
@@ -111,6 +115,10 @@ export default function AddRecipeModal({ onClose, onAdded, showToast }: Props) {
       return;
     }
 
+    const ingredientsList = values.ingredients
+      ? values.ingredients.split("\n").map((s) => s.trim()).filter(Boolean)
+      : [];
+
     const { data, error } = await supabase
       .from("recipes")
       .insert({
@@ -126,6 +134,7 @@ export default function AddRecipeModal({ onClose, onAdded, showToast }: Props) {
         is_video: parsed?.is_video ?? false,
         status: values.status,
         tags: values.tags,
+        ingredients: ingredientsList,
       })
       .select()
       .single();

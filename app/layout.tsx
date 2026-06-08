@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { DM_Serif_Display, DM_Sans } from "next/font/google";
+import ClientProviders from "./components/ClientProviders";
 import "./globals.css";
 
 const dmSerifDisplay = DM_Serif_Display({
@@ -16,20 +17,16 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Sam & Kathy's Recipes",
+  title: process.env.NEXT_PUBLIC_APP_TITLE ?? "Sam & Kathy's Recipes",
   description: "Our shared recipe collection",
   icons: { icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'><text y='32' font-size='32'>🍳</text></svg>" },
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body className={`${dmSerifDisplay.variable} ${dmSans.variable}`}>
-        {children}
+        <ClientProviders>{children}</ClientProviders>
       </body>
     </html>
   );

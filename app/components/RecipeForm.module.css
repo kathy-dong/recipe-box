@@ -31,6 +31,15 @@
   letter-spacing: 0;
 }
 
+.labelHint {
+  font-size: 10px;
+  text-transform: none;
+  color: var(--text-light);
+  letter-spacing: 0;
+  font-weight: 400;
+  margin-left: 4px;
+}
+
 .input {
   width: 100%;
   padding: 10px 12px;

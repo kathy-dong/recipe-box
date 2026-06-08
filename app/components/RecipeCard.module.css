@@ -103,6 +103,7 @@
 /* Action buttons shared base */
 .editBtn,
 .trashBtn,
+.cookLogBtn,
 .heart {
   position: absolute;
   background: rgba(0, 0, 0, 0.35);
@@ -122,6 +123,7 @@
 
 .editBtn:hover,
 .trashBtn:hover,
+.cookLogBtn:hover,
 .heart:hover {
   background: rgba(0, 0, 0, 0.55);
 }
@@ -147,16 +149,30 @@
   opacity: 0;
 }
 
-/* Show edit/trash on card hover (desktop) */
+/* Cook log — bottom-right of image */
+.cookLogBtn {
+  bottom: 10px;
+  right: 10px;
+  opacity: 0;
+}
+
+.cookLogBtnActive {
+  background: rgba(0, 0, 0, 0.55) !important;
+  color: #a8d5a2 !important;
+}
+
+/* Show edit/trash/cooklog on card hover (desktop) */
 .card:hover .editBtn,
-.card:hover .trashBtn {
+.card:hover .trashBtn,
+.card:hover .cookLogBtn {
   opacity: 1;
 }
 
 /* Always show on touch devices */
 @media (hover: none) {
   .editBtn,
-  .trashBtn {
+  .trashBtn,
+  .cookLogBtn {
     opacity: 1;
   }
 }
@@ -234,4 +250,77 @@
   background: #f0ede9;
   color: #777;
   white-space: nowrap;
+}
+
+/* Title row with notes icon */
+.titleRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+}
+
+.title {
+  flex: 1;
+}
+
+.notesIcon {
+  font-size: 13px;
+  color: var(--text-light);
+  margin-top: 3px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+/* Personal ratings */
+.personalRatings {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 5px;
+}
+
+.personalRatingItem {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.personalInitial {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  width: 13px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.personalStar {
+  font-size: 14px;
+  color: #d0c8c0;
+  line-height: 1;
+  background: none;
+  border: none;
+  padding: 1px;
+  cursor: default;
+  transition: color 0.1s, transform 0.1s;
+}
+
+button.personalStar {
+  cursor: pointer;
+}
+
+button.personalStar:hover {
+  transform: scale(1.15);
+}
+
+.personalStarFilled {
+  color: #7b9ea8;
+}
+
+/* Cook summary */
+.cookSummary {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 3px;
 }

@@ -1,6 +1,8 @@
 import styles from "./page.module.css";
 
-export const metadata = { title: "Add Recipes Anywhere — Sam & Kathy's Recipes" };
+const appTitle = process.env.NEXT_PUBLIC_APP_TITLE ?? "Sam & Kathy's Recipes";
+
+export const metadata = { title: `Add Recipes Anywhere — ${appTitle}` };
 
 export default function SharePage() {
   const siteUrl =
@@ -36,7 +38,7 @@ export default function SharePage() {
       <main className={styles.main}>
         <h1 className={styles.title}>Add recipes from anywhere</h1>
         <p className={styles.lead}>
-          Save recipes to the box without opening the app — straight from Safari, Chrome, or any app on your phone or computer.
+          Save recipes to {appTitle} without opening the app — straight from Safari, Chrome, or any app on your phone or computer.
         </p>
 
         {/* iOS Shortcut */}

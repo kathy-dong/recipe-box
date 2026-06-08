@@ -194,10 +194,11 @@ function extractYouTubeChannelName(html: string): string | null {
   return match ? match[1].trim() : null;
 }
 
-function extractJsonLd(html: string) {
-  const result: Record<string, string | null> = {
+function extractJsonLd(html: string): Record<string, unknown> {
+  const result: Record<string, unknown> = {
     title: null, image_url: null, author: null,
-    cook_time: null, rating: null, rating_count: null, description: null,
+    cook_time: null, rating: null, rating_count: null,
+    description: null, ingredients: [] as string[],
   };
 
   const scriptMatches = Array.from(
@@ -255,6 +256,13 @@ function extractJsonLd(html: string) {
           const ar = obj.aggregateRating as Record<string, unknown>;
           if (!result.rating && ar.ratingValue) result.rating = String(ar.ratingValue);
           if (!result.rating_count && ar.ratingCount) result.rating_count = String(ar.ratingCount);
+        }
+
+        // Extract ingredients from recipeIngredient
+        if ((result.ingredients as string[]).length === 0 && Array.isArray(obj.recipeIngredient)) {
+          result.ingredients = (obj.recipeIngredient as unknown[])
+            .map((i) => String(i).trim())
+            .filter(Boolean);
         }
       }
     } catch {
@@ -357,7 +365,7 @@ export async function POST(request: NextRequest) {
   const ld = extractJsonLd(html);
 
   // Merge: oEmbed takes priority, then JSON-LD, then OG
-  const ldAuthor = ld.author && !isPublisher(ld.author, source_site) ? ld.author : null;
+  const ldAuthor = ld.author && !isPublisher(ld.author as string, source_site) ? ld.author : null;
   const oEmbedAuthor = oEmbed.author && !isPublisher(oEmbed.author, source_site) ? oEmbed.author : null;
 
   const merged: Record<string, unknown> = {
@@ -371,6 +379,7 @@ export async function POST(request: NextRequest) {
     source_site,
     is_video,
     suggested_tags: [] as string[],
+    ingredients: (ld.ingredients as string[]) ?? [],
   };
 
   // Video-specific author fallback (when oEmbed and JSON-LD both gave nothing)
@@ -390,6 +399,9 @@ export async function POST(request: NextRequest) {
       merged.author = video_author_hint;
     }
   }
+
+  // Videos don't have ingredients
+  if (is_video) merged.ingredients = [];
 
   // YouTube thumbnail: always upgrade to maxresdefault from video ID
   if (source_site === "YouTube") {

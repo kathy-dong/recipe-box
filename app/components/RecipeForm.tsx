@@ -13,6 +13,8 @@ export type RecipeFormValues = {
   description: string;
   status: "to_try" | "made_it" | "favorite";
   tags: string[];
+  notes: string;
+  ingredients: string; // newline-separated
 };
 
 type StatusOption = "to_try" | "made_it" | "favorite";
@@ -30,6 +32,7 @@ type Props = {
   submitLabel?: string;
   saving?: boolean;
   statusOptions?: StatusOption[];
+  showNotes?: boolean;
 };
 
 export default function RecipeForm({
@@ -39,6 +42,7 @@ export default function RecipeForm({
   submitLabel = "Save",
   saving = false,
   statusOptions = ["to_try", "made_it", "favorite"],
+  showNotes = false,
 }: Props) {
   const [title, setTitle] = useState(initialValues.title);
   const [author, setAuthor] = useState(initialValues.author);
@@ -48,9 +52,11 @@ export default function RecipeForm({
   const [description, setDescription] = useState(initialValues.description);
   const [status, setStatus] = useState<StatusOption>(initialValues.status);
   const [tags, setTags] = useState<string[]>(initialValues.tags);
+  const [notes, setNotes] = useState(initialValues.notes);
+  const [ingredients, setIngredients] = useState(initialValues.ingredients);
 
   function handleSubmit() {
-    onSubmit({ title, author, cook_time: cookTime, rating, image_url: imageUrl, description, status, tags });
+    onSubmit({ title, author, cook_time: cookTime, rating, image_url: imageUrl, description, status, tags, notes, ingredients });
   }
 
   return (
@@ -103,6 +109,30 @@ export default function RecipeForm({
           rows={3}
         />
       </div>
+
+      <div className={styles.field}>
+        <label className={styles.label}>Ingredients <span className={styles.labelHint}>one per line</span></label>
+        <textarea
+          className={styles.textarea}
+          value={ingredients}
+          onChange={(e) => setIngredients(e.target.value)}
+          placeholder={"2 cups flour\n1 tsp salt\n…"}
+          rows={4}
+        />
+      </div>
+
+      {showNotes && (
+        <div className={styles.field}>
+          <label className={styles.label}>Personal notes</label>
+          <textarea
+            className={styles.textarea}
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Tips, tweaks, or memories from making this…"
+            rows={3}
+          />
+        </div>
+      )}
 
       <div className={styles.field}>
         <label className={styles.label}>Tags</label>
