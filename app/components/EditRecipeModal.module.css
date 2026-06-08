@@ -15,6 +15,7 @@
   border-radius: var(--radius);
   width: 100%;
   max-width: 520px;
+  min-height: min(560px, 80vh);
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
@@ -185,10 +186,75 @@
   padding-bottom: 0;
 }
 
+.cookLogEntryHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
 .cookLogDate {
   font-size: 13px;
   font-weight: 600;
   color: var(--text-primary);
+}
+
+.deleteEntryBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-light);
+  padding: 3px 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s, background 0.15s;
+}
+
+.cookLogEntry:hover .deleteEntryBtn {
+  opacity: 1;
+}
+
+.deleteEntryBtn:hover {
+  color: #c84b31;
+  background: #fdf0ed;
+}
+
+@media (hover: none) {
+  .deleteEntryBtn {
+    opacity: 1;
+  }
+}
+
+.deleteConfirm {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-muted);
+  padding: 6px 0;
+}
+
+.deleteConfirmDot {
+  color: var(--text-light);
+}
+
+.deleteConfirmBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: var(--font-sans);
+  color: var(--accent);
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: opacity 0.15s;
+}
+
+.deleteConfirmBtn:hover {
+  opacity: 0.75;
 }
 
 .cookLogNotes {

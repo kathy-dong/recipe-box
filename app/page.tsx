@@ -198,6 +198,19 @@ export default function Home() {
     }
   }
 
+  function handleCookDeleted(recipeId: string, remainingCount: number, newLastDate: string | null) {
+    setCookSummaries((prev) => {
+      if (remainingCount === 0) {
+        return prev.filter((s) => s.recipe_id !== recipeId);
+      }
+      return prev.map((s) =>
+        s.recipe_id === recipeId
+          ? { ...s, count: remainingCount, last_cooked: newLastDate }
+          : s
+      );
+    });
+  }
+
   function handleCookLogged(recipeId: string, cookedOn: string) {
     setCookSummaries((prev) => {
       const existing = prev.find((s) => s.recipe_id === recipeId);
@@ -370,6 +383,7 @@ export default function Home() {
           onClose={() => setEditingRecipe(null)}
           onSaved={handleEditSaved}
           showToast={showToast}
+          onCookDeleted={handleCookDeleted}
         />
       )}
       {deletingRecipe && (
