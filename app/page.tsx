@@ -2,8 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import type { Recipe, PersonalRating, CookSummary } from "@/lib/supabase";
-import { useIdentity } from "@/lib/identity";
+import type { Recipe, CookSummary } from "@/lib/supabase";
 import RecipeCard from "./components/RecipeCard";
 import AddRecipeModal from "./components/AddRecipeModal";
 import EditRecipeModal from "./components/EditRecipeModal";
@@ -11,8 +10,6 @@ import DeleteConfirmDialog from "./components/DeleteConfirmDialog";
 import CookLogModal from "./components/CookLogModal";
 import FilterBar from "./components/FilterBar";
 import SkeletonGrid from "./components/SkeletonGrid";
-import IdentityModal from "./components/IdentityModal";
-import IdentityIndicator from "./components/IdentityIndicator";
 import Toast, { type ToastItem } from "./components/Toast";
 import styles from "./page.module.css";
 
@@ -23,10 +20,7 @@ type Tab = "all" | "to_try" | "made_it" | "favorite";
 let toastCounter = 0;
 
 export default function Home() {
-  const { person, person1, person2, mounted } = useIdentity();
-
   const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [personalRatings, setPersonalRatings] = useState<PersonalRating[]>([]);
   const [cookSummaries, setCookSummaries] = useState<CookSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<Tab>("all");
@@ -54,16 +48,13 @@ export default function Home() {
 
   useEffect(() => {
     async function load() {
-      const [recipesRes, ratingsRes, cookRes] = await Promise.all([
+      const [recipesRes, cookRes] = await Promise.all([
         supabase.from("recipes").select("*").order("added_at", { ascending: false }),
-        supabase.from("personal_ratings").select("*"),
         supabase.from("cook_log").select("recipe_id, cooked_on").order("cooked_on", { ascending: false }),
       ]);
 
       setRecipes((recipesRes.data as Recipe[]) ?? []);
-      setPersonalRatings((ratingsRes.data as PersonalRating[]) ?? []);
 
-      // Aggregate cook summaries client-side
       const summaryMap: Record<string, CookSummary> = {};
       for (const entry of (cookRes.data ?? []) as { recipe_id: string; cooked_on: string }[]) {
         if (!summaryMap[entry.recipe_id]) {
@@ -85,7 +76,6 @@ export default function Home() {
     if (mobileSearchOpen) searchInputRef.current?.focus();
   }, [mobileSearchOpen]);
 
-  // Derived maps
   const cookSummaryMap = useMemo(() => {
     const map: Record<string, { count: number; lastDate: string | null }> = {};
     for (const s of cookSummaries) {
@@ -94,18 +84,6 @@ export default function Home() {
     return map;
   }, [cookSummaries]);
 
-  const ratingsMap = useMemo(() => {
-    const map: Record<string, { mine: number | null; theirs: number | null }> = {};
-    if (!person) return map;
-    for (const r of personalRatings) {
-      if (!map[r.recipe_id]) map[r.recipe_id] = { mine: null, theirs: null };
-      if (r.person === person) map[r.recipe_id].mine = r.rating;
-      else map[r.recipe_id].theirs = r.rating;
-    }
-    return map;
-  }, [personalRatings, person]);
-
-  // Tab counts (unaffected by tag/search filters)
   const allCount = recipes.length;
   const toTryCount = recipes.filter((r) => r.status === "to_try").length;
   const madeItCount = recipes.filter((r) => r.status === "made_it" || r.status === "favorite").length;
@@ -117,13 +95,7 @@ export default function Home() {
     if (activeTags.length > 0 && !activeTags.every((t) => r.tags.includes(t))) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      const haystack = [
-        r.title,
-        r.author,
-        r.source_site,
-        r.description,
-        ...(r.ingredients ?? []),
-      ]
+      const haystack = [r.title, r.author, r.source_site, r.description, ...(r.ingredients ?? [])]
         .filter(Boolean)
         .join(" ")
         .toLowerCase();
@@ -204,29 +176,24 @@ export default function Home() {
     }
   }
 
-  async function handleRateRecipe(recipeId: string, rating: number) {
-    if (!person) return;
+  async function handleRateRecipe(recipeId: string, rating: number | null) {
+    const recipe = recipes.find((r) => r.id === recipeId);
+    if (!recipe) return;
+    const prevRating = recipe.our_rating;
 
-    // Optimistic update
-    setPersonalRatings((prev) => {
-      const filtered = prev.filter((r) => !(r.recipe_id === recipeId && r.person === person));
-      return [
-        ...filtered,
-        { id: `temp_${Date.now()}`, recipe_id: recipeId, person, rating, rated_at: new Date().toISOString() },
-      ];
-    });
+    setRecipes((prev) =>
+      prev.map((r) => (r.id === recipeId ? { ...r, our_rating: rating } : r))
+    );
 
     const { error } = await supabase
-      .from("personal_ratings")
-      .upsert({ recipe_id: recipeId, person, rating }, { onConflict: "recipe_id,person" });
+      .from("recipes")
+      .update({ our_rating: rating })
+      .eq("id", recipeId);
 
     if (error) {
-      // Revert by re-fetching this recipe's ratings
-      const { data } = await supabase.from("personal_ratings").select("*").eq("recipe_id", recipeId);
-      setPersonalRatings((prev) => {
-        const filtered = prev.filter((r) => r.recipe_id !== recipeId);
-        return [...filtered, ...((data as PersonalRating[]) ?? [])];
-      });
+      setRecipes((prev) =>
+        prev.map((r) => (r.id === recipeId ? { ...r, our_rating: prevRating } : r))
+      );
       showToast("Couldn't save rating", "error");
     }
   }
@@ -240,7 +207,8 @@ export default function Home() {
             ? {
                 ...s,
                 count: s.count + 1,
-                last_cooked: !s.last_cooked || cookedOn >= s.last_cooked ? cookedOn : s.last_cooked,
+                last_cooked:
+                  !s.last_cooked || cookedOn >= s.last_cooked ? cookedOn : s.last_cooked,
               }
             : s
         );
@@ -248,7 +216,6 @@ export default function Home() {
       return [...prev, { recipe_id: recipeId, count: 1, last_cooked: cookedOn }];
     });
 
-    // If recipe was "to_try", promote to "made_it" in local state
     setRecipes((prev) =>
       prev.map((r) =>
         r.id === recipeId && r.status === "to_try" ? { ...r, status: "made_it" } : r
@@ -256,203 +223,173 @@ export default function Home() {
     );
   }
 
-  // Derived identity info for cards
-  const myInitial = mounted && person ? person.charAt(0) : "";
-  const otherPersonName = person === person1 ? person2 : person1;
-  const otherInitial = mounted && otherPersonName ? otherPersonName.charAt(0) : "";
-
   return (
-    <>
-      <IdentityModal />
-      <main className={styles.page}>
-        <header className={styles.header}>
-          <div className={styles.headerInner}>
-            {mobileSearchOpen ? (
-              <div className={styles.mobileSearchBar}>
-                <SearchIcon />
-                <input
-                  ref={searchInputRef}
-                  className={styles.mobileSearchInput}
-                  placeholder="Search recipes..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
+    <main className={styles.page}>
+      <header className={styles.header}>
+        <div className={styles.headerInner}>
+          {mobileSearchOpen ? (
+            <div className={styles.mobileSearchBar}>
+              <SearchIcon />
+              <input
+                ref={searchInputRef}
+                className={styles.mobileSearchInput}
+                placeholder="Search recipes..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              <button
+                className={styles.mobileSearchClose}
+                onClick={() => { setMobileSearchOpen(false); setSearchQuery(""); }}
+                aria-label="Close search"
+              >
+                ✕
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className={styles.siteTitleWrap}>
+                <h1 className={styles.siteTitle}>{APP_TITLE}</h1>
+                {!loading && (
+                  <p className={styles.recipeCount}>
+                    {recipes.length} recipe{recipes.length !== 1 ? "s" : ""}
+                  </p>
+                )}
+              </div>
+              <div className={styles.headerRight}>
+                <div className={styles.desktopSearch}>
+                  <SearchIcon />
+                  <input
+                    className={styles.searchInput}
+                    placeholder="Search recipes..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
                 <button
-                  className={styles.mobileSearchClose}
-                  onClick={() => { setMobileSearchOpen(false); setSearchQuery(""); }}
-                  aria-label="Close search"
+                  className={styles.mobileSearchBtn}
+                  onClick={() => setMobileSearchOpen(true)}
+                  aria-label="Search"
                 >
-                  ✕
+                  <SearchIcon />
+                </button>
+                <button className={styles.addBtn} onClick={() => setAddOpen(true)}>
+                  + Add Recipe
                 </button>
               </div>
-            ) : (
-              <>
-                <div className={styles.siteTitleWrap}>
-                  <h1 className={styles.siteTitle}>{APP_TITLE}</h1>
-                  {!loading && (
-                    <p className={styles.recipeCount}>
-                      {recipes.length} recipe{recipes.length !== 1 ? "s" : ""}
-                    </p>
-                  )}
-                  <IdentityIndicator />
-                </div>
-                <div className={styles.headerRight}>
-                  <div className={styles.desktopSearch}>
-                    <SearchIcon />
-                    <input
-                      className={styles.searchInput}
-                      placeholder="Search recipes..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                  </div>
-                  <button
-                    className={styles.mobileSearchBtn}
-                    onClick={() => setMobileSearchOpen(true)}
-                    aria-label="Search"
-                  >
-                    <SearchIcon />
-                  </button>
-                  <button className={styles.addBtn} onClick={() => setAddOpen(true)}>
-                    + Add Recipe
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </header>
+            </>
+          )}
+        </div>
+      </header>
 
-        <nav className={styles.tabs}>
-          <div className={styles.tabsInner}>
-            {(["all", "to_try", "made_it", "favorite"] as Tab[]).map((t) => {
-              const labels: Record<Tab, string> = {
-                all: "All",
-                to_try: "To Try",
-                made_it: "Made It",
-                favorite: "Favorites",
-              };
-              const counts: Record<Tab, number> = {
-                all: allCount,
-                to_try: toTryCount,
-                made_it: madeItCount,
-                favorite: favCount,
-              };
-              return (
-                <button
-                  key={t}
-                  className={`${styles.tab} ${tab === t ? styles.tabActive : ""}`}
-                  onClick={() => setTab(t)}
-                >
-                  {labels[t]} <span className={styles.tabCount}>({counts[t]})</span>
-                </button>
-              );
-            })}
-          </div>
-        </nav>
+      <nav className={styles.tabs}>
+        <div className={styles.tabsInner}>
+          {(["all", "to_try", "made_it", "favorite"] as Tab[]).map((t) => {
+            const labels: Record<Tab, string> = {
+              all: "All",
+              to_try: "To Try",
+              made_it: "Made It",
+              favorite: "Favorites",
+            };
+            const counts: Record<Tab, number> = {
+              all: allCount,
+              to_try: toTryCount,
+              made_it: madeItCount,
+              favorite: favCount,
+            };
+            return (
+              <button
+                key={t}
+                className={`${styles.tab} ${tab === t ? styles.tabActive : ""}`}
+                onClick={() => setTab(t)}
+              >
+                {labels[t]} <span className={styles.tabCount}>({counts[t]})</span>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
 
-        <FilterBar activeTags={activeTags} onChange={setActiveTags} />
+      <FilterBar activeTags={activeTags} onChange={setActiveTags} />
 
-        {loading ? (
-          <SkeletonGrid />
-        ) : recipes.length === 0 ? (
-          <div className={styles.empty}>
-            <span className={styles.emptyIcon}>🍳</span>
-            <p className={styles.emptyTitle}>No recipes yet!</p>
-            <p className={styles.emptySub}>Add your first recipe to get started.</p>
-            <button className={styles.emptyAddBtn} onClick={() => setAddOpen(true)}>
-              Add a recipe
-            </button>
-          </div>
-        ) : displayRecipes.length === 0 && searchQuery.trim() ? (
-          <div className={styles.empty}>
-            <p className={styles.emptyTitle}>No recipes found for &ldquo;{searchQuery.trim()}&rdquo;</p>
-            <button className={styles.emptyClearBtn} onClick={() => setSearchQuery("")}>
-              Clear search
-            </button>
-          </div>
-        ) : displayRecipes.length === 0 ? (
-          <div className={styles.empty}>
-            <p className={styles.emptyTitle}>No recipes match these filters</p>
-            <button
-              className={styles.emptyClearBtn}
-              onClick={() => { setActiveTags([]); setTab("all"); }}
-            >
-              Clear filters
-            </button>
-          </div>
-        ) : (
-          <div className={styles.grid}>
-            {displayRecipes.map((r) => (
-              <RecipeCard
-                key={r.id}
-                recipe={r}
-                isDeleting={deletingIds.has(r.id)}
-                onToggleFavorite={handleToggleFavorite}
-                onEdit={handleEditOpen}
-                onDelete={handleDeleteOpen}
-                onLogCook={(recipe) => setCookLogRecipe(recipe)}
-                ratingInfo={
-                  mounted && person
-                    ? {
-                        myRating: ratingsMap[r.id]?.mine ?? null,
-                        otherRating: ratingsMap[r.id]?.theirs ?? null,
-                        myInitial,
-                        otherInitial,
-                      }
-                    : undefined
-                }
-                cookInfo={cookSummaryMap[r.id]}
-                onRate={handleRateRecipe}
-              />
-            ))}
-          </div>
-        )}
+      {loading ? (
+        <SkeletonGrid />
+      ) : recipes.length === 0 ? (
+        <div className={styles.empty}>
+          <span className={styles.emptyIcon}>🍳</span>
+          <p className={styles.emptyTitle}>No recipes yet!</p>
+          <p className={styles.emptySub}>Add your first recipe to get started.</p>
+          <button className={styles.emptyAddBtn} onClick={() => setAddOpen(true)}>
+            Add a recipe
+          </button>
+        </div>
+      ) : displayRecipes.length === 0 && searchQuery.trim() ? (
+        <div className={styles.empty}>
+          <p className={styles.emptyTitle}>No recipes found for &ldquo;{searchQuery.trim()}&rdquo;</p>
+          <button className={styles.emptyClearBtn} onClick={() => setSearchQuery("")}>
+            Clear search
+          </button>
+        </div>
+      ) : displayRecipes.length === 0 ? (
+        <div className={styles.empty}>
+          <p className={styles.emptyTitle}>No recipes match these filters</p>
+          <button
+            className={styles.emptyClearBtn}
+            onClick={() => { setActiveTags([]); setTab("all"); }}
+          >
+            Clear filters
+          </button>
+        </div>
+      ) : (
+        <div className={styles.grid}>
+          {displayRecipes.map((r) => (
+            <RecipeCard
+              key={r.id}
+              recipe={r}
+              isDeleting={deletingIds.has(r.id)}
+              onToggleFavorite={handleToggleFavorite}
+              onEdit={handleEditOpen}
+              onDelete={handleDeleteOpen}
+              onLogCook={(recipe) => setCookLogRecipe(recipe)}
+              cookInfo={cookSummaryMap[r.id]}
+              onRate={handleRateRecipe}
+            />
+          ))}
+        </div>
+      )}
 
-        <button className={styles.fab} onClick={() => setAddOpen(true)} aria-label="Add recipe">
-          +
-        </button>
+      <button className={styles.fab} onClick={() => setAddOpen(true)} aria-label="Add recipe">
+        +
+      </button>
 
-        {addOpen && (
-          <AddRecipeModal onClose={() => setAddOpen(false)} onAdded={handleAdded} showToast={showToast} />
-        )}
-        {editingRecipe && (
-          <EditRecipeModal
-            recipe={editingRecipe}
-            onClose={() => setEditingRecipe(null)}
-            onSaved={handleEditSaved}
-            showToast={showToast}
-            ratingInfo={
-              mounted && person
-                ? {
-                    myRating: ratingsMap[editingRecipe.id]?.mine ?? null,
-                    otherRating: ratingsMap[editingRecipe.id]?.theirs ?? null,
-                    myInitial,
-                    otherInitial,
-                  }
-                : undefined
-            }
-            onRate={handleRateRecipe}
-          />
-        )}
-        {deletingRecipe && (
-          <DeleteConfirmDialog
-            title={deletingRecipe.title}
-            onCancel={() => setDeletingRecipe(null)}
-            onConfirm={handleDeleteConfirm}
-          />
-        )}
-        {cookLogRecipe && (
-          <CookLogModal
-            recipe={cookLogRecipe}
-            onClose={() => setCookLogRecipe(null)}
-            onLogged={handleCookLogged}
-            showToast={showToast}
-          />
-        )}
+      {addOpen && (
+        <AddRecipeModal onClose={() => setAddOpen(false)} onAdded={handleAdded} showToast={showToast} />
+      )}
+      {editingRecipe && (
+        <EditRecipeModal
+          recipe={editingRecipe}
+          onClose={() => setEditingRecipe(null)}
+          onSaved={handleEditSaved}
+          showToast={showToast}
+        />
+      )}
+      {deletingRecipe && (
+        <DeleteConfirmDialog
+          title={deletingRecipe.title}
+          onCancel={() => setDeletingRecipe(null)}
+          onConfirm={handleDeleteConfirm}
+        />
+      )}
+      {cookLogRecipe && (
+        <CookLogModal
+          recipe={cookLogRecipe}
+          onClose={() => setCookLogRecipe(null)}
+          onLogged={handleCookLogged}
+          showToast={showToast}
+        />
+      )}
 
-        <Toast toasts={toasts} onDismiss={dismissToast} />
-      </main>
-    </>
+      <Toast toasts={toasts} onDismiss={dismissToast} />
+    </main>
   );
 }
 

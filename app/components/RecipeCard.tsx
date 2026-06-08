@@ -5,13 +5,6 @@ import type { Recipe } from "@/lib/supabase";
 import { MEAL_TYPE_VALUES, labelForTag } from "@/lib/tags";
 import styles from "./RecipeCard.module.css";
 
-export type CardRatingInfo = {
-  myRating: number | null;
-  otherRating: number | null;
-  myInitial: string;
-  otherInitial: string;
-};
-
 export type CardCookInfo = {
   count: number;
   lastDate: string | null;
@@ -24,28 +17,38 @@ type Props = {
   onEdit: (recipe: Recipe) => void;
   onDelete: (recipe: Recipe) => void;
   onLogCook?: (recipe: Recipe) => void;
-  ratingInfo?: CardRatingInfo;
   cookInfo?: CardCookInfo;
-  onRate?: (recipeId: string, rating: number) => void;
+  onRate?: (recipeId: string, rating: number | null) => void;
 };
 
-function StarRating({ rating }: { rating: string }) {
-  const val = parseFloat(rating);
-  if (isNaN(val)) return null;
-  const full = Math.floor(val);
-  const half = val - full >= 0.25 && val - full < 0.75;
-  const stars = Array.from({ length: 5 }, (_, i) => {
-    if (i < full) return "★";
-    if (i === full && half) return "½";
-    return "☆";
-  });
-  return <span className={styles.stars}>{stars.join("")}</span>;
-}
+function OurRatingStars({
+  rating,
+  onRate,
+}: {
+  rating: number | null;
+  onRate?: (r: number | null) => void;
+}) {
+  if (rating === null) return null;
 
-function formatRatingCount(count: string): string {
-  const n = parseInt(count.replace(/,/g, ""));
-  if (isNaN(n)) return count;
-  return n.toLocaleString();
+  return (
+    <div className={styles.ourRating}>
+      {[1, 2, 3, 4, 5].map((n) => (
+        <button
+          key={n}
+          type="button"
+          className={`${styles.ourRatingStar} ${n <= rating ? styles.ourRatingStarFilled : ""}`}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onRate?.(n === rating ? null : n);
+          }}
+          aria-label={n === rating ? "Clear rating" : `Rate ${n} star${n !== 1 ? "s" : ""}`}
+        >
+          {n <= rating ? "★" : "☆"}
+        </button>
+      ))}
+    </div>
+  );
 }
 
 function formatCookDate(dateStr: string): string {
@@ -59,44 +62,6 @@ function formatCookDate(dateStr: string): string {
   return date.toLocaleDateString("en-US", opts);
 }
 
-function PersonalRatingStars({
-  initial,
-  rating,
-  interactive,
-  onRate,
-}: {
-  initial: string;
-  rating: number | null;
-  interactive: boolean;
-  onRate?: (r: number) => void;
-}) {
-  return (
-    <span className={styles.personalRatingItem}>
-      <span className={styles.personalInitial}>{initial}</span>
-      {[1, 2, 3, 4, 5].map((n) =>
-        interactive ? (
-          <button
-            key={n}
-            type="button"
-            className={`${styles.personalStar} ${rating !== null && n <= rating ? styles.personalStarFilled : ""}`}
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); onRate?.(n); }}
-            aria-label={`Rate ${n} star${n !== 1 ? "s" : ""}`}
-          >
-            {rating !== null && n <= rating ? "★" : "☆"}
-          </button>
-        ) : (
-          <span
-            key={n}
-            className={`${styles.personalStar} ${rating !== null && n <= rating ? styles.personalStarFilled : ""}`}
-          >
-            {rating !== null && n <= rating ? "★" : "☆"}
-          </span>
-        )
-      )}
-    </span>
-  );
-}
-
 export default function RecipeCard({
   recipe,
   isDeleting,
@@ -104,7 +69,6 @@ export default function RecipeCard({
   onEdit,
   onDelete,
   onLogCook,
-  ratingInfo,
   cookInfo,
   onRate,
 }: Props) {
@@ -119,10 +83,6 @@ export default function RecipeCard({
     e.stopPropagation();
     fn();
   }
-
-  const showPersonalRatings =
-    ratingInfo &&
-    (ratingInfo.myInitial || ratingInfo.otherInitial);
 
   return (
     <a
@@ -202,40 +162,13 @@ export default function RecipeCard({
               {recipe.cook_time}
             </span>
           )}
-          {recipe.rating && (
-            <span className={styles.rating}>
-              <StarRating rating={recipe.rating} />
-              {recipe.rating_count && (
-                <span className={styles.ratingCount}>
-                  {formatRatingCount(recipe.rating_count)}
-                </span>
-              )}
-            </span>
-          )}
         </div>
 
-        {/* Personal ratings */}
-        {showPersonalRatings && (
-          <div className={styles.personalRatings}>
-            {ratingInfo!.myInitial && (
-              <PersonalRatingStars
-                initial={ratingInfo!.myInitial}
-                rating={ratingInfo!.myRating}
-                interactive
-                onRate={(r) => onRate?.(recipe.id, r)}
-              />
-            )}
-            {ratingInfo!.otherInitial && (
-              <PersonalRatingStars
-                initial={ratingInfo!.otherInitial}
-                rating={ratingInfo!.otherRating}
-                interactive={false}
-              />
-            )}
-          </div>
-        )}
+        <OurRatingStars
+          rating={recipe.our_rating}
+          onRate={(r) => onRate?.(recipe.id, r)}
+        />
 
-        {/* Cook summary */}
         {cookInfo && cookInfo.count > 0 && (
           <p className={styles.cookSummary}>
             Cooked {cookInfo.count}×

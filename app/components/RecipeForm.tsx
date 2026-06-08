@@ -6,11 +6,9 @@ import styles from "./RecipeForm.module.css";
 
 export type RecipeFormValues = {
   title: string;
-  author: string;
   cook_time: string;
-  rating: string;
+  rating: string; // online crowd rating — preserved but not shown as editable field
   image_url: string;
-  description: string;
   status: "to_try" | "made_it" | "favorite";
   tags: string[];
   notes: string;
@@ -45,18 +43,27 @@ export default function RecipeForm({
   showNotes = false,
 }: Props) {
   const [title, setTitle] = useState(initialValues.title);
-  const [author, setAuthor] = useState(initialValues.author);
   const [cookTime, setCookTime] = useState(initialValues.cook_time);
-  const [rating, setRating] = useState(initialValues.rating);
   const [imageUrl, setImageUrl] = useState(initialValues.image_url);
-  const [description, setDescription] = useState(initialValues.description);
   const [status, setStatus] = useState<StatusOption>(initialValues.status);
   const [tags, setTags] = useState<string[]>(initialValues.tags);
   const [notes, setNotes] = useState(initialValues.notes);
   const [ingredients, setIngredients] = useState(initialValues.ingredients);
+  const [ingredientsExpanded, setIngredientsExpanded] = useState(
+    !!initialValues.ingredients.trim()
+  );
 
   function handleSubmit() {
-    onSubmit({ title, author, cook_time: cookTime, rating, image_url: imageUrl, description, status, tags, notes, ingredients });
+    onSubmit({
+      title,
+      cook_time: cookTime,
+      rating: initialValues.rating, // pass through unchanged
+      image_url: imageUrl,
+      status,
+      tags,
+      notes,
+      ingredients,
+    });
   }
 
   return (
@@ -70,16 +77,8 @@ export default function RecipeForm({
           placeholder="Recipe title"
         />
       </div>
+
       <div className={styles.fieldRow}>
-        <div className={styles.field}>
-          <label className={styles.label}>Author</label>
-          <input
-            className={styles.input}
-            value={author}
-            onChange={(e) => setAuthor(e.target.value)}
-            placeholder="e.g. Samin Nosrat"
-          />
-        </div>
         <div className={styles.field}>
           <label className={styles.label}>Cook time</label>
           <input
@@ -89,36 +88,36 @@ export default function RecipeForm({
             placeholder="e.g. 30 min"
           />
         </div>
-      </div>
-      <div className={styles.field}>
-        <label className={styles.label}>Image URL</label>
-        <input
-          className={styles.input}
-          value={imageUrl}
-          onChange={(e) => setImageUrl(e.target.value)}
-          placeholder="https://…"
-        />
-      </div>
-      <div className={styles.field}>
-        <label className={styles.label}>Description</label>
-        <textarea
-          className={styles.textarea}
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="A short description…"
-          rows={3}
-        />
+        <div className={styles.field}>
+          <label className={styles.label}>Image URL</label>
+          <input
+            className={styles.input}
+            value={imageUrl}
+            onChange={(e) => setImageUrl(e.target.value)}
+            placeholder="https://…"
+          />
+        </div>
       </div>
 
+      {/* Collapsible ingredients */}
       <div className={styles.field}>
-        <label className={styles.label}>Ingredients <span className={styles.labelHint}>one per line</span></label>
-        <textarea
-          className={styles.textarea}
-          value={ingredients}
-          onChange={(e) => setIngredients(e.target.value)}
-          placeholder={"2 cups flour\n1 tsp salt\n…"}
-          rows={4}
-        />
+        <button
+          type="button"
+          className={styles.collapseToggle}
+          onClick={() => setIngredientsExpanded((v) => !v)}
+        >
+          Ingredients
+          <span className={styles.collapseIcon}>{ingredientsExpanded ? "▴" : "▾"}</span>
+        </button>
+        {ingredientsExpanded && (
+          <textarea
+            className={styles.textarea}
+            value={ingredients}
+            onChange={(e) => setIngredients(e.target.value)}
+            placeholder={"2 cups flour\n1 tsp salt\n…"}
+            rows={4}
+          />
+        )}
       </div>
 
       {showNotes && (

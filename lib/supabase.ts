@@ -22,20 +22,12 @@ export type Recipe = {
   added_at: string;
   notes: string | null;
   ingredients: string[];
-};
-
-export type PersonalRating = {
-  id: string;
-  recipe_id: string;
-  person: string;
-  rating: number;
-  rated_at: string;
+  our_rating: number | null;
 };
 
 export type CookLogEntry = {
   id: string;
   recipe_id: string;
-  person: string | null;
   cooked_on: string;
   notes: string | null;
   created_at: string;

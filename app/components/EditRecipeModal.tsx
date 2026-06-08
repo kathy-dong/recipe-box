@@ -7,47 +7,49 @@ import type { ToastItem } from "./Toast";
 import RecipeForm, { type RecipeFormValues } from "./RecipeForm";
 import styles from "./EditRecipeModal.module.css";
 
-type RatingInfo = {
-  myRating: number | null;
-  otherRating: number | null;
-  myInitial: string;
-  otherInitial: string;
-};
-
 type Props = {
   recipe: Recipe;
   onClose: () => void;
   onSaved: (updated: Recipe) => void;
   showToast: (message: string, type?: ToastItem["type"]) => void;
-  ratingInfo?: RatingInfo;
-  onRate?: (recipeId: string, rating: number) => void;
 };
 
-function StarPicker({
+function OurRatingPicker({
   rating,
   onChange,
 }: {
   rating: number | null;
-  onChange: (r: number) => void;
+  onChange: (r: number | null) => void;
 }) {
   const [hover, setHover] = useState<number | null>(null);
   const display = hover ?? rating ?? 0;
+
   return (
-    <span className={styles.starPicker}>
+    <div className={styles.ratingPicker}>
       {[1, 2, 3, 4, 5].map((n) => (
         <button
           key={n}
           type="button"
-          className={`${styles.starBtn} ${n <= display ? styles.starFilled : ""}`}
+          className={`${styles.ratingStarBtn} ${n <= display ? styles.ratingStarBtnFilled : ""}`}
           onMouseEnter={() => setHover(n)}
           onMouseLeave={() => setHover(null)}
-          onClick={() => onChange(n)}
-          aria-label={`${n} star${n !== 1 ? "s" : ""}`}
+          onClick={() => onChange(n === rating ? null : n)}
+          aria-label={n === rating ? "Clear rating" : `Rate ${n} star${n !== 1 ? "s" : ""}`}
         >
           {n <= display ? "★" : "☆"}
         </button>
       ))}
-    </span>
+      {rating !== null && (
+        <button
+          type="button"
+          className={styles.clearRatingBtn}
+          onClick={() => onChange(null)}
+          aria-label="Clear rating"
+        >
+          Clear
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -56,36 +58,44 @@ function formatCookDate(dateStr: string): string {
   const date = new Date(year, month - 1, day);
   const thisYear = new Date().getFullYear();
   const opts: Intl.DateTimeFormatOptions =
-    year === thisYear ? { month: "short", day: "numeric" } : { month: "short", day: "numeric", year: "numeric" };
+    year === thisYear
+      ? { month: "short", day: "numeric" }
+      : { month: "short", day: "numeric", year: "numeric" };
   return date.toLocaleDateString("en-US", opts);
 }
 
-export default function EditRecipeModal({ recipe, onClose, onSaved, showToast, ratingInfo, onRate }: Props) {
+export default function EditRecipeModal({ recipe, onClose, onSaved, showToast }: Props) {
+  const [activeTab, setActiveTab] = useState<"edit" | "history">("edit");
   const [saving, setSaving] = useState(false);
+  const [ourRating, setOurRating] = useState<number | null>(recipe.our_rating);
   const [cookLog, setCookLog] = useState<CookLogEntry[]>([]);
   const [cookLogLoading, setCookLogLoading] = useState(false);
 
   useEffect(() => {
-    async function fetchCookLog() {
-      setCookLogLoading(true);
-      const { data } = await supabase
-        .from("cook_log")
-        .select("*, cook_log_photos(*)")
-        .eq("recipe_id", recipe.id)
-        .order("cooked_on", { ascending: false });
-      setCookLog((data as CookLogEntry[]) ?? []);
-      setCookLogLoading(false);
-    }
-    fetchCookLog();
-  }, [recipe.id]);
+    function onKey(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  useEffect(() => {
+    if (activeTab !== "history") return;
+    setCookLogLoading(true);
+    supabase
+      .from("cook_log")
+      .select("*, cook_log_photos(*)")
+      .eq("recipe_id", recipe.id)
+      .order("cooked_on", { ascending: false })
+      .then(({ data }) => {
+        setCookLog((data as CookLogEntry[]) ?? []);
+        setCookLogLoading(false);
+      });
+  }, [activeTab, recipe.id]);
 
   const initialValues: RecipeFormValues = {
     title: recipe.title,
-    author: recipe.author ?? "",
     cook_time: recipe.cook_time ?? "",
     rating: recipe.rating ?? "",
     image_url: recipe.image_url ?? "",
-    description: recipe.description ?? "",
     status: recipe.status,
     tags: recipe.tags ?? [],
     notes: recipe.notes ?? "",
@@ -99,19 +109,17 @@ export default function EditRecipeModal({ recipe, onClose, onSaved, showToast, r
       ? values.ingredients.split("\n").map((s) => s.trim()).filter(Boolean)
       : [];
 
-    const { data, error: err } = await supabase
+    const { data, error } = await supabase
       .from("recipes")
       .update({
         title: values.title.trim(),
-        author: values.author.trim() || null,
         cook_time: values.cook_time.trim() || null,
-        rating: values.rating.trim() || null,
         image_url: values.image_url.trim() || null,
-        description: values.description.trim() || null,
         status: values.status,
         tags: values.tags,
         notes: values.notes.trim() || null,
         ingredients: ingredientsList,
+        our_rating: ourRating,
       })
       .eq("id", recipe.id)
       .select()
@@ -119,7 +127,7 @@ export default function EditRecipeModal({ recipe, onClose, onSaved, showToast, r
 
     setSaving(false);
 
-    if (err || !data) {
+    if (error || !data) {
       showToast("Something went wrong — please try again.", "error");
       return;
     }
@@ -136,108 +144,81 @@ export default function EditRecipeModal({ recipe, onClose, onSaved, showToast, r
           <button className={styles.closeBtn} onClick={onClose} aria-label="Close">✕</button>
         </div>
 
-        <RecipeForm
-          initialValues={initialValues}
-          onSubmit={handleSave}
-          onCancel={onClose}
-          submitLabel="Save Changes"
-          saving={saving}
-          statusOptions={["to_try", "made_it", "favorite"]}
-          showNotes
-        />
+        {/* Tabs */}
+        <div className={styles.tabs}>
+          <button
+            className={`${styles.tab} ${activeTab === "edit" ? styles.tabActive : ""}`}
+            onClick={() => setActiveTab("edit")}
+          >
+            Edit
+          </button>
+          <button
+            className={`${styles.tab} ${activeTab === "history" ? styles.tabActive : ""}`}
+            onClick={() => setActiveTab("history")}
+          >
+            History{cookLog.length > 0 ? ` (${cookLog.length})` : ""}
+          </button>
+        </div>
 
-        {/* Personal ratings */}
-        {ratingInfo && (
-          <div className={styles.ratingsSection}>
-            <h3 className={styles.sectionTitle}>Personal ratings</h3>
-            <div className={styles.ratingsGrid}>
-              {ratingInfo.myInitial && (
-                <div className={styles.ratingRow}>
-                  <span className={styles.ratingInitial}>{ratingInfo.myInitial}</span>
-                  <StarPicker
-                    rating={ratingInfo.myRating}
-                    onChange={(r) => onRate?.(recipe.id, r)}
-                  />
-                  {ratingInfo.myRating === null && (
-                    <span className={styles.ratingEmpty}>not rated</span>
-                  )}
-                </div>
-              )}
-              {ratingInfo.otherInitial && (
-                <div className={styles.ratingRow}>
-                  <span className={styles.ratingInitial}>{ratingInfo.otherInitial}</span>
-                  <span className={styles.staticStars}>
-                    {[1, 2, 3, 4, 5].map((n) => (
-                      <span
-                        key={n}
-                        className={`${styles.staticStar} ${
-                          ratingInfo.otherRating !== null && n <= ratingInfo.otherRating
-                            ? styles.staticStarFilled
-                            : ""
-                        }`}
-                      >
-                        {ratingInfo.otherRating !== null && n <= ratingInfo.otherRating ? "★" : "☆"}
-                      </span>
-                    ))}
-                  </span>
-                  {ratingInfo.otherRating === null && (
-                    <span className={styles.ratingEmpty}>not rated</span>
-                  )}
-                </div>
-              )}
+        {activeTab === "edit" ? (
+          <div className={styles.editTab}>
+            {/* Our Rating — at the top */}
+            <div className={styles.ratingField}>
+              <span className={styles.ratingLabel}>Our Rating</span>
+              <OurRatingPicker rating={ourRating} onChange={setOurRating} />
             </div>
+
+            <RecipeForm
+              initialValues={initialValues}
+              onSubmit={handleSave}
+              onCancel={onClose}
+              submitLabel="Save Changes"
+              saving={saving}
+              statusOptions={["to_try", "made_it", "favorite"]}
+              showNotes
+            />
+          </div>
+        ) : (
+          <div className={styles.historyTab}>
+            {cookLogLoading ? (
+              <p className={styles.historyEmpty}>Loading…</p>
+            ) : cookLog.length === 0 ? (
+              <p className={styles.historyEmpty}>
+                Not cooked yet — log your first cook from the recipe card.
+              </p>
+            ) : (
+              <ul className={styles.cookLogList}>
+                {cookLog.map((entry) => (
+                  <li key={entry.id} className={styles.cookLogEntry}>
+                    <span className={styles.cookLogDate}>{formatCookDate(entry.cooked_on)}</span>
+                    {entry.notes && (
+                      <p className={styles.cookLogNotes}>{entry.notes}</p>
+                    )}
+                    {entry.cook_log_photos.length > 0 && (
+                      <div className={styles.cookLogPhotos}>
+                        {entry.cook_log_photos.map((photo) => (
+                          <a
+                            key={photo.id}
+                            href={photo.photo_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={styles.cookLogPhotoLink}
+                          >
+                            <img
+                              src={photo.photo_url}
+                              alt={photo.caption ?? "Cook photo"}
+                              className={styles.cookLogPhoto}
+                            />
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         )}
-
-        {/* Cook history */}
-        <div className={styles.cookHistorySection}>
-          <h3 className={styles.sectionTitle}>
-            Cook history
-            {cookLog.length > 0 && (
-              <span className={styles.cookCount}>{cookLog.length}×</span>
-            )}
-          </h3>
-          {cookLogLoading ? (
-            <p className={styles.cookLogEmpty}>Loading…</p>
-          ) : cookLog.length === 0 ? (
-            <p className={styles.cookLogEmpty}>Not cooked yet — log your first cook from the recipe card.</p>
-          ) : (
-            <ul className={styles.cookLogList}>
-              {cookLog.map((entry) => (
-                <li key={entry.id} className={styles.cookLogEntry}>
-                  <div className={styles.cookLogHeader}>
-                    <span className={styles.cookLogDate}>{formatCookDate(entry.cooked_on)}</span>
-                    {entry.person && (
-                      <span className={styles.cookLogPerson}>{entry.person}</span>
-                    )}
-                  </div>
-                  {entry.notes && (
-                    <p className={styles.cookLogNotes}>{entry.notes}</p>
-                  )}
-                  {entry.cook_log_photos.length > 0 && (
-                    <div className={styles.cookLogPhotos}>
-                      {entry.cook_log_photos.map((photo) => (
-                        <a
-                          key={photo.id}
-                          href={photo.photo_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={styles.cookLogPhotoLink}
-                        >
-                          <img
-                            src={photo.photo_url}
-                            alt={photo.caption ?? "Cook photo"}
-                            className={styles.cookLogPhoto}
-                          />
-                        </a>
-                      ))}
-                    </div>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
       </div>
     </div>
   );

@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import type { Recipe } from "@/lib/supabase";
-import { useIdentity } from "@/lib/identity";
 import type { ToastItem } from "./Toast";
 import styles from "./CookLogModal.module.css";
 
@@ -20,12 +19,17 @@ function todayString(): string {
 }
 
 export default function CookLogModal({ recipe, onClose, onLogged, showToast }: Props) {
-  const { person } = useIdentity();
   const [cookedOn, setCookedOn] = useState(todayString());
   const [notes, setNotes] = useState("");
   const [photos, setPhotos] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
 
   function handleFiles(files: FileList | null) {
     if (!files) return;
@@ -69,7 +73,6 @@ export default function CookLogModal({ recipe, onClose, onLogged, showToast }: P
       .from("cook_log")
       .insert({
         recipe_id: recipe.id,
-        person: person ?? null,
         cooked_on: cookedOn,
         notes: notes.trim() || null,
       })
@@ -181,10 +184,6 @@ export default function CookLogModal({ recipe, onClose, onLogged, showToast }: P
             </div>
           )}
         </div>
-
-        {person && (
-          <p className={styles.loggedAs}>Logging as <strong>{person}</strong></p>
-        )}
 
         <div className={styles.actions}>
           <button className={styles.cancelBtn} onClick={onClose}>Cancel</button>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import type { Recipe } from "@/lib/supabase";
 import type { ToastItem } from "./Toast";
@@ -23,11 +23,9 @@ type ParsedData = {
 
 const EMPTY_FORM: RecipeFormValues = {
   title: "",
-  author: "",
   cook_time: "",
   rating: "",
   image_url: "",
-  description: "",
   status: "to_try",
   tags: [],
   notes: "",
@@ -47,6 +45,12 @@ export default function AddRecipeModal({ onClose, onAdded, showToast }: Props) {
   const [parsed, setParsed] = useState<ParsedData | null>(null);
   const [formValues, setFormValues] = useState<RecipeFormValues>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
 
   const showForm = parsed !== null || fetchError !== "";
 
@@ -78,11 +82,9 @@ export default function AddRecipeModal({ onClose, onAdded, showToast }: Props) {
         setParsed(data);
         setFormValues({
           title: data.title ?? "",
-          author: data.author ?? "",
           cook_time: data.cook_time ?? "",
           rating: data.rating ?? "",
           image_url: data.image_url ?? "",
-          description: data.description ?? "",
           status: "to_try",
           tags: data.suggested_tags ?? [],
           notes: "",
@@ -125,11 +127,11 @@ export default function AddRecipeModal({ onClose, onAdded, showToast }: Props) {
         url: url.trim(),
         title: values.title.trim(),
         image_url: values.image_url.trim() || null,
-        author: values.author.trim() || null,
+        author: parsed?.author ?? null,
         cook_time: values.cook_time.trim() || null,
         rating: values.rating.trim() || null,
         rating_count: parsed?.rating_count ?? null,
-        description: values.description.trim() || null,
+        description: parsed?.description ?? null,
         source_site: parsed?.source_site ?? null,
         is_video: parsed?.is_video ?? false,
         status: values.status,

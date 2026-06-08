@@ -220,21 +220,6 @@
   color: var(--text-muted);
 }
 
-.rating {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 14px;
-}
-
-.stars {
-  color: #e5a42b;
-  letter-spacing: -1px;
-}
-
-.ratingCount {
-  color: var(--text-muted);
-}
 
 .tagPills {
   display: flex;
@@ -271,51 +256,30 @@
   line-height: 1;
 }
 
-/* Personal ratings */
-.personalRatings {
+/* Our shared rating */
+.ourRating {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin-top: 5px;
+  gap: 1px;
+  margin-top: 4px;
 }
 
-.personalRatingItem {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-}
-
-.personalInitial {
-  font-family: var(--font-sans);
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--text-muted);
-  width: 13px;
-  flex-shrink: 0;
-  line-height: 1;
-}
-
-.personalStar {
-  font-size: 14px;
-  color: #d0c8c0;
+.ourRatingStar {
+  font-size: 15px;
+  color: #ddd0c8;
   line-height: 1;
   background: none;
   border: none;
-  padding: 1px;
-  cursor: default;
+  padding: 1px 2px;
+  cursor: pointer;
   transition: color 0.1s, transform 0.1s;
 }
 
-button.personalStar {
-  cursor: pointer;
+.ourRatingStar:hover {
+  transform: scale(1.2);
 }
 
-button.personalStar:hover {
-  transform: scale(1.15);
-}
-
-.personalStarFilled {
-  color: #7b9ea8;
+.ourRatingStarFilled {
+  color: var(--accent);
 }
 
 /* Cook summary */
