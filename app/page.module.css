@@ -140,6 +140,23 @@
   margin: 0;
 }
 
+.gearBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  color: var(--text-light);
+  transition: color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+
+.gearBtn:hover {
+  color: var(--text-muted);
+  background: #f4f3f0;
+}
+
 .addBtn {
   padding: 10px 20px;
   background: var(--accent);

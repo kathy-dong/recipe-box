@@ -1,0 +1,228 @@
+.page {
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+.inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 32px 2rem 80px;
+}
+
+.backLink {
+  display: inline-block;
+  font-size: 13px;
+  color: var(--text-muted);
+  text-decoration: none;
+  margin-bottom: 28px;
+  transition: color 0.15s;
+}
+
+.backLink:hover {
+  color: var(--text-primary);
+}
+
+.pageTitle {
+  font-family: var(--font-serif);
+  font-size: 32px;
+  font-weight: 400;
+  color: var(--text-primary);
+  margin: 0 0 36px;
+}
+
+/* Sections */
+.section {
+  border-top: 1px solid var(--border);
+  padding: 28px 0;
+}
+
+.sectionTitle {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 6px;
+}
+
+.sectionDesc {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0 0 16px;
+  line-height: 1.5;
+}
+
+/* Inline input + button row */
+.inlineField {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  max-width: 480px;
+}
+
+.input {
+  flex: 1;
+  padding: 9px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  color: var(--text-primary);
+  background: var(--card-bg);
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.input:focus {
+  border-color: var(--accent);
+}
+
+.saveBtn {
+  padding: 9px 18px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, opacity 0.15s;
+  flex-shrink: 0;
+}
+
+.saveBtn:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.saveBtn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* Info rows (key/value display) */
+.infoRow {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.infoLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  min-width: 96px;
+}
+
+.infoValue {
+  font-size: 13px;
+  color: var(--text-muted);
+  word-break: break-all;
+}
+
+.inlineCode {
+  font-family: monospace;
+  font-size: 12px;
+  background: #f0ede9;
+  padding: 1px 5px;
+  border-radius: 4px;
+  color: var(--text-primary);
+}
+
+/* Link row */
+.linkRow {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--accent);
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+
+.linkRow:hover {
+  opacity: 0.75;
+}
+
+/* Admin card */
+.adminCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px;
+  border-radius: 10px;
+  text-decoration: none;
+  background: #f5f3ef;
+  max-width: 480px;
+  transition: background 0.15s;
+}
+
+.adminCard:hover {
+  background: #ede9e3;
+}
+
+.adminCardLeft {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.adminCardIcon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--card-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.adminCardText {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.adminCardText strong {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+}
+
+.adminCardText span {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.adminArrow {
+  font-size: 16px;
+  color: var(--text-light);
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .inner {
+    padding: 24px 1.25rem 60px;
+  }
+
+  .inlineField {
+    flex-direction: column;
+    align-items: stretch;
+    max-width: 100%;
+  }
+
+  .saveBtn {
+    width: 100%;
+  }
+
+  .adminCard {
+    max-width: 100%;
+  }
+}

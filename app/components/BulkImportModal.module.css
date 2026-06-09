@@ -1,0 +1,333 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+  backdrop-filter: blur(2px);
+  animation: fadeIn 0.15s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  position: relative;
+  animation: slideUp 0.15s ease;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Header ──────────────────────────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  flex-shrink: 0;
+}
+
+.title {
+  font-family: var(--font-serif);
+  font-size: 22px;
+  font-weight: 400;
+  color: var(--text-primary);
+}
+
+.closeBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #f4f4f4;
+  color: var(--text-muted);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.closeBtn:hover {
+  background: #eaeaea;
+}
+
+/* ─── Input phase ─────────────────────────────────────────────────────────── */
+
+.textarea {
+  width: 100%;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 13px;
+  font-family: var(--font-sans);
+  color: var(--text-primary);
+  background: var(--card-bg);
+  resize: vertical;
+  outline: none;
+  line-height: 1.6;
+  transition: border-color 0.15s;
+  min-height: 200px;
+  box-sizing: border-box;
+}
+
+.textarea:focus {
+  border-color: #bbb;
+}
+
+.textarea::placeholder {
+  color: var(--text-light);
+}
+
+.helperText {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 8px 0 0;
+  flex-shrink: 0;
+}
+
+/* ─── Actions row ─────────────────────────────────────────────────────────── */
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-shrink: 0;
+  padding-top: 20px;
+}
+
+.cancelBtn {
+  padding: 9px 18px;
+  background: none;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--font-sans);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.cancelBtn:hover {
+  border-color: #bbb;
+  color: var(--text-primary);
+}
+
+.importBtn {
+  padding: 9px 20px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+  white-space: nowrap;
+}
+
+.importBtn:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.importBtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* ─── Progress phase ──────────────────────────────────────────────────────── */
+
+.counter {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  flex-shrink: 0;
+}
+
+.counter strong {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.progressList {
+  overflow-y: auto;
+  max-height: 360px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.progressRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid #f3f3f3;
+  min-height: 44px;
+}
+
+.progressRow:last-child {
+  border-bottom: none;
+}
+
+.row_processing {
+  background: #fffbf7;
+}
+
+.row_success {
+  background: #fafff9;
+}
+
+.progressUrl {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 1;
+  min-width: 0;
+}
+
+.progressStatus {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  max-width: 220px;
+  text-align: right;
+}
+
+.statusText {
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.statusIcon {
+  font-size: 14px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.pendingDot {
+  color: #ccc;
+  font-size: 18px;
+  line-height: 1;
+}
+
+/* ─── Abort overlay ───────────────────────────────────────────────────────── */
+
+.abortOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius);
+  z-index: 10;
+  backdrop-filter: blur(2px);
+}
+
+.abortDialog {
+  background: var(--card-bg);
+  border-radius: 10px;
+  padding: 24px 28px;
+  max-width: 360px;
+  width: 90%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  text-align: center;
+}
+
+.abortMsg {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin: 0 0 6px;
+  font-family: var(--font-sans);
+}
+
+.abortSub {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0 0 20px;
+}
+
+.abortActions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.abortKeepBtn {
+  padding: 8px 16px;
+  background: none;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font-sans);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.abortKeepBtn:hover {
+  border-color: #bbb;
+  color: var(--text-primary);
+}
+
+.abortStopBtn {
+  padding: 8px 16px;
+  background: #c0392b;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font-sans);
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.abortStopBtn:hover {
+  background: #a93226;
+}
+
+@media (max-width: 640px) {
+  .modal {
+    padding: 20px;
+  }
+
+  .progressList {
+    max-height: 260px;
+  }
+}

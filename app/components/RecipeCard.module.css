@@ -264,8 +264,8 @@
 }
 
 .ourRatingStar {
-  font-size: 15px;
-  color: #ddd0c8;
+  font-size: 13px;
+  color: #e0dbd4;
   line-height: 1;
   background: none;
   border: none;
@@ -279,7 +279,7 @@
 }
 
 .ourRatingStarFilled {
-  color: var(--accent);
+  color: #d4920a;
 }
 
 /* Cook summary */

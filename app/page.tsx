@@ -1,8 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import type { Recipe, CookSummary } from "@/lib/supabase";
+import { useSettings } from "@/lib/settings-context";
 import RecipeCard from "./components/RecipeCard";
 import AddRecipeModal from "./components/AddRecipeModal";
 import EditRecipeModal from "./components/EditRecipeModal";
@@ -13,13 +15,12 @@ import SkeletonGrid from "./components/SkeletonGrid";
 import Toast, { type ToastItem } from "./components/Toast";
 import styles from "./page.module.css";
 
-const APP_TITLE = process.env.NEXT_PUBLIC_APP_TITLE ?? "Sam & Kathy's Recipes";
-
 type Tab = "all" | "to_try" | "made_it" | "favorite";
 
 let toastCounter = 0;
 
 export default function Home() {
+  const { appTitle } = useSettings();
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [cookSummaries, setCookSummaries] = useState<CookSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -261,7 +262,7 @@ export default function Home() {
           ) : (
             <>
               <div className={styles.siteTitleWrap}>
-                <h1 className={styles.siteTitle}>{APP_TITLE}</h1>
+                <h1 className={styles.siteTitle}>{appTitle}</h1>
                 {!loading && (
                   <p className={styles.recipeCount}>
                     {recipes.length} recipe{recipes.length !== 1 ? "s" : ""}
@@ -269,6 +270,9 @@ export default function Home() {
                 )}
               </div>
               <div className={styles.headerRight}>
+                <Link href="/settings" className={styles.gearBtn} aria-label="Settings">
+                  <GearIcon />
+                </Link>
                 <div className={styles.desktopSearch}>
                   <SearchIcon />
                   <input
@@ -412,6 +416,15 @@ function SearchIcon() {
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="11" cy="11" r="8" />
       <line x1="21" y1="21" x2="16.65" y2="16.65" />
+    </svg>
+  );
+}
+
+function GearIcon() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
     </svg>
   );
 }
