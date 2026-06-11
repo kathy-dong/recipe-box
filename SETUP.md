@@ -1,131 +1,111 @@
 # Setup Guide
 
-How to fork and deploy your own copy of this recipe box app.
+This guide walks you through setting up your own recipe box. It takes about 10–15 minutes. You'll need free accounts on three services: **Supabase** (database), **Google AI Studio** (recipe parsing), and **Vercel** (hosting). No coding experience needed.
 
-## 1. Supabase
+---
 
-1. Create a project at [supabase.com](https://supabase.com)
-2. Go to **SQL Editor** and run the SQL block below
-3. Go to **Storage → New bucket**, name it `cook-photos`, and enable **Public bucket**
-4. Copy your project URL and keys from **Settings → API**
+## 1. Set up Supabase (your database)
 
-### Required SQL
+1. Go to [supabase.com](https://supabase.com) and sign up for a free account
+2. Click **New project**. Give it any name (e.g. `recipe-box`), set a database password (save it somewhere, but you won't need it again), and choose a region close to you. Click **Create new project** and wait about a minute for it to spin up.
 
-```sql
-CREATE TABLE recipes (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  url TEXT NOT NULL UNIQUE,
-  title TEXT NOT NULL,
-  image_url TEXT,
-  author TEXT,
-  cook_time TEXT,
-  rating TEXT,
-  rating_count TEXT,
-  description TEXT,
-  source_site TEXT,
-  tags TEXT[] DEFAULT '{}',
-  status TEXT DEFAULT 'to_try' CHECK (status IN ('to_try', 'made_it', 'favorite')),
-  is_video BOOLEAN DEFAULT FALSE,
-  added_at TIMESTAMPTZ DEFAULT NOW(),
-  notes TEXT,
-  ingredients TEXT[] DEFAULT '{}',
-  our_rating INTEGER CHECK (our_rating BETWEEN 1 AND 5)
-);
+**Create the database tables:**
 
-CREATE INDEX idx_recipes_status ON recipes(status);
+3. In the left sidebar, click the **SQL Editor** icon (it looks like `>_`)
+4. Click **New query**
+5. Open [`schema.sql`](schema.sql) from this repo, copy everything, paste it into the editor, and click the green **Run** button. You should see "Success. No rows returned."
 
-CREATE TABLE cook_log (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  recipe_id UUID REFERENCES recipes(id) ON DELETE CASCADE NOT NULL,
-  cooked_on DATE DEFAULT CURRENT_DATE,
-  notes TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
+**Create the storage bucket (for cook log photos):**
 
-CREATE TABLE cook_log_photos (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  cook_log_id UUID REFERENCES cook_log(id) ON DELETE CASCADE NOT NULL,
-  photo_url TEXT NOT NULL,
-  caption TEXT,
-  uploaded_at TIMESTAMPTZ DEFAULT NOW()
-);
+6. In the left sidebar, click the **Storage** icon (bucket icon)
+7. Click **New bucket**. Name it exactly `cook-photos` (with the hyphen). Toggle **Public bucket** ON. Click **Create bucket**.
 
-CREATE TABLE app_settings (
-  key TEXT PRIMARY KEY,
-  value TEXT NOT NULL,
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
+**Copy your API keys:**
 
--- Seed the app title (change this to your own name)
-INSERT INTO app_settings (key, value) VALUES ('app_title', 'Sam & Kathy''s Recipes');
+8. In the left sidebar, click the **Settings** icon (gear), then click **API** in the submenu
+9. You'll see a **Project URL** and two keys under **Project API keys**. Copy:
+   - The **Project URL**
+   - The key labeled **anon / public**
+   - The key labeled **service_role** (needed for cook log photo uploads — click the eye icon to reveal it)
 
--- Enable RLS with open policies (trusted small-group app)
-ALTER TABLE recipes ENABLE ROW LEVEL SECURITY;
-ALTER TABLE cook_log ENABLE ROW LEVEL SECURITY;
-ALTER TABLE cook_log_photos ENABLE ROW LEVEL SECURITY;
-ALTER TABLE app_settings ENABLE ROW LEVEL SECURITY;
+Keep these handy for step 3.
 
-CREATE POLICY "allow all" ON recipes FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "allow all" ON cook_log FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "allow all" ON cook_log_photos FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "allow all" ON app_settings FOR ALL USING (true) WITH CHECK (true);
+---
 
--- Storage policies (run after creating the cook-photos bucket)
-CREATE POLICY "allow all uploads" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'cook-photos');
-CREATE POLICY "allow all reads" ON storage.objects FOR SELECT USING (bucket_id = 'cook-photos');
-CREATE POLICY "allow all updates" ON storage.objects FOR UPDATE USING (bucket_id = 'cook-photos');
-CREATE POLICY "allow all deletes" ON storage.objects FOR DELETE USING (bucket_id = 'cook-photos');
-```
+## 2. Get a Gemini API key (for recipe parsing)
 
-## 2. Environment variables
+1. Go to [aistudio.google.com](https://aistudio.google.com) and sign in with your Google account
+2. Click **Get API key**, then **Create API key**
+3. Copy the key — you'll need it in the next step. This is free.
 
-Copy `.env.local.example` to `.env.local` and fill in your values:
+---
 
-```
-# Required
-NEXT_PUBLIC_SUPABASE_URL=       # from Supabase Settings → API
-NEXT_PUBLIC_SUPABASE_ANON_KEY=  # from Supabase Settings → API
-GEMINI_API_KEY=                 # from Google AI Studio (free tier)
+## 3. Deploy to Vercel
 
-# Optional
-SUPABASE_SERVICE_ROLE_KEY=      # from Supabase Settings → API (for photo uploads; falls back to anon key)
-QUICK_ADD_KEY=                  # any passphrase you choose (enables iOS shortcut auth)
-NEXT_PUBLIC_APP_TITLE=          # fallback title if app_settings not yet seeded
-NEXT_PUBLIC_SITE_URL=           # your production URL, e.g. https://your-app.vercel.app
-```
+1. Click the **Deploy** button in the [README](README.md) (or go to [vercel.com/new](https://vercel.com/new) and import this repo)
+2. Connect your GitHub account if prompted and select this repo
+3. Before clicking Deploy, open **Environment Variables** and add:
 
-> **Note:** The app name is stored in the database and editable from `/settings` — you don't need to set `NEXT_PUBLIC_APP_TITLE` unless you want a fallback before the DB is seeded.
+| Variable | Value |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase Project URL (from step 1) |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Your Supabase anon / public key (from step 1) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Your Supabase service_role key (from step 1) |
+| `GEMINI_API_KEY` | Your Gemini API key (from step 2) |
 
-## 3. Run locally
+4. Click **Deploy**. It takes about 1–2 minutes.
+
+---
+
+## 4. You're done!
+
+Visit your new URL (Vercel shows it after deploy). You'll see an empty recipe box — visit `/settings` to give it a name, then click **+ Add Recipe** to get started.
+
+---
+
+## Optional: iOS Shortcut
+
+Add recipes directly from Safari on your iPhone without opening the app.
+
+1. In your Vercel project, go to **Settings → Environment Variables** and add:
+   - `QUICK_ADD_KEY` — any passphrase you choose (e.g. `mysecretkey123`)
+   - `NEXT_PUBLIC_SITE_URL` — your Vercel deployment URL (e.g. `https://your-app.vercel.app`)
+2. Redeploy (Vercel → Deployments → Redeploy)
+3. Visit `/share` on your app for step-by-step shortcut setup instructions
+
+---
+
+## Optional configuration
+
+These can be set in Vercel environment variables if needed:
+
+| Variable | Description |
+|---|---|
+| `NEXT_PUBLIC_APP_TITLE` | Fallback app title shown before the database loads. Usually not needed — the name you set in `/settings` takes effect immediately. |
+
+---
+
+<details>
+<summary>For developers — run locally</summary>
 
 ```bash
 npm install
 npm run dev
 ```
 
-## 4. Deploy to Vercel
+Copy `.env.local.example` to `.env.local` and fill in the variables from steps 1–2 above.
 
-1. Push to GitHub
-2. Import the repo in [vercel.com](https://vercel.com)
-3. Add all environment variables in **Settings → Environment Variables**
-4. Deploy
+</details>
 
-## 5. Personalize the app name
+<details>
+<summary>For developers — backfill ingredients on existing recipes</summary>
 
-After deploying, go to `/settings` and update the app title. It saves to the database and updates the header immediately — no redeploy needed.
-
-## 6. iOS Share Shortcut (optional)
-
-Visit `your-domain.com/share` after deploying — it has step-by-step instructions to set up the iOS shortcut that lets you add recipes directly from Safari.
-
-Requires `QUICK_ADD_KEY` to be set in Vercel environment variables.
-
-## 7. Backfill ingredients (optional)
-
-If you have existing recipes without ingredients, run:
+If you have existing recipes that were added before ingredient parsing was supported:
 
 ```bash
 curl -X POST https://your-domain.com/api/backfill-ingredients \
   -H "Content-Type: application/json" \
   -d '{"key":"your-quick-add-key"}'
 ```
+
+</details>
