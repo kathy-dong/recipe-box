@@ -152,6 +152,15 @@
   padding: 8px 12px;
 }
 
+.configWarning {
+  font-size: 13px;
+  color: #6b7280;
+  background: #f4f3f0;
+  border-radius: 6px;
+  padding: 8px 12px;
+  line-height: 1.5;
+}
+
 .duplicateMsg {
   font-size: 13px;
   color: var(--accent);

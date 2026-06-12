@@ -442,6 +442,7 @@ export async function POST(request: NextRequest) {
   });
 
   merged.suggested_tags = mergeTags(ruleTags, geminiTags);
+  merged.gemini_configured = !!process.env.GEMINI_API_KEY;
 
   return NextResponse.json(merged);
 }

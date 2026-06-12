@@ -19,6 +19,7 @@ type ParsedData = {
   is_video?: boolean;
   suggested_tags?: string[];
   ingredients?: string[];
+  gemini_configured?: boolean;
 };
 
 const EMPTY_FORM: RecipeFormValues = {
@@ -189,6 +190,12 @@ export default function AddRecipeModal({ onClose, onAdded, showToast }: Props) {
         </div>
 
         {fetchError && <p className={styles.errorMsg}>{fetchError}</p>}
+
+        {parsed && parsed.gemini_configured === false && !parsed.title && (
+          <p className={styles.configWarning}>
+            Recipe parsing isn&apos;t fully configured — you can still add recipes manually by filling in the fields below.
+          </p>
+        )}
 
         {showForm && (
           <RecipeForm

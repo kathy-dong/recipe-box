@@ -12,10 +12,12 @@ import DeleteConfirmDialog from "./components/DeleteConfirmDialog";
 import CookLogModal from "./components/CookLogModal";
 import FilterBar from "./components/FilterBar";
 import SkeletonGrid from "./components/SkeletonGrid";
+import ErrorState from "./components/ErrorState";
 import Toast, { type ToastItem } from "./components/Toast";
 import styles from "./page.module.css";
 
 type Tab = "all" | "to_try" | "made_it" | "favorite";
+type LoadError = "no_connection" | "no_tables" | "unknown";
 
 let toastCounter = 0;
 
@@ -35,6 +37,7 @@ export default function Home() {
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
   const [cookLogRecipe, setCookLogRecipe] = useState<Recipe | null>(null);
 
+  const [loadError, setLoadError] = useState<LoadError | null>(null);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -49,26 +52,36 @@ export default function Home() {
 
   useEffect(() => {
     async function load() {
-      const [recipesRes, cookRes] = await Promise.all([
-        supabase.from("recipes").select("*").order("added_at", { ascending: false }),
-        supabase.from("cook_log").select("recipe_id, cooked_on").order("cooked_on", { ascending: false }),
-      ]);
+      try {
+        const [recipesRes, cookRes] = await Promise.all([
+          supabase.from("recipes").select("*").order("added_at", { ascending: false }),
+          supabase.from("cook_log").select("recipe_id, cooked_on").order("cooked_on", { ascending: false }),
+        ]);
 
-      setRecipes((recipesRes.data as Recipe[]) ?? []);
+        if (recipesRes.error) {
+          setLoadError(recipesRes.error.code === "42P01" ? "no_tables" : "no_connection");
+          setLoading(false);
+          return;
+        }
 
-      const summaryMap: Record<string, CookSummary> = {};
-      for (const entry of (cookRes.data ?? []) as { recipe_id: string; cooked_on: string }[]) {
-        if (!summaryMap[entry.recipe_id]) {
-          summaryMap[entry.recipe_id] = { recipe_id: entry.recipe_id, count: 0, last_cooked: null };
+        setRecipes((recipesRes.data as Recipe[]) ?? []);
+
+        const summaryMap: Record<string, CookSummary> = {};
+        for (const entry of (cookRes.data ?? []) as { recipe_id: string; cooked_on: string }[]) {
+          if (!summaryMap[entry.recipe_id]) {
+            summaryMap[entry.recipe_id] = { recipe_id: entry.recipe_id, count: 0, last_cooked: null };
+          }
+          summaryMap[entry.recipe_id].count++;
+          if (!summaryMap[entry.recipe_id].last_cooked) {
+            summaryMap[entry.recipe_id].last_cooked = entry.cooked_on;
+          }
         }
-        summaryMap[entry.recipe_id].count++;
-        if (!summaryMap[entry.recipe_id].last_cooked) {
-          summaryMap[entry.recipe_id].last_cooked = entry.cooked_on;
-        }
+        setCookSummaries(Object.values(summaryMap));
+      } catch {
+        setLoadError("no_connection");
+      } finally {
+        setLoading(false);
       }
-      setCookSummaries(Object.values(summaryMap));
-
-      setLoading(false);
     }
     load();
   }, []);
@@ -298,81 +311,111 @@ export default function Home() {
         </div>
       </header>
 
-      <nav className={styles.tabs}>
-        <div className={styles.tabsInner}>
-          {(["all", "to_try", "made_it", "favorite"] as Tab[]).map((t) => {
-            const labels: Record<Tab, string> = {
-              all: "All",
-              to_try: "To Try",
-              made_it: "Made It",
-              favorite: "Favorites",
-            };
-            const counts: Record<Tab, number> = {
-              all: allCount,
-              to_try: toTryCount,
-              made_it: madeItCount,
-              favorite: favCount,
-            };
-            return (
-              <button
-                key={t}
-                className={`${styles.tab} ${tab === t ? styles.tabActive : ""}`}
-                onClick={() => setTab(t)}
-              >
-                {labels[t]} <span className={styles.tabCount}>({counts[t]})</span>
-              </button>
-            );
-          })}
-        </div>
-      </nav>
-
-      <FilterBar activeTags={activeTags} onChange={setActiveTags} />
-
-      {loading ? (
-        <SkeletonGrid />
-      ) : recipes.length === 0 ? (
-        <div className={styles.empty}>
-          <span className={styles.emptyIcon}>🍳</span>
-          <p className={styles.emptyTitle}>No recipes yet!</p>
-          <p className={styles.emptySub}>Add your first recipe to get started.</p>
-          <button className={styles.emptyAddBtn} onClick={() => setAddOpen(true)}>
-            Add a recipe
-          </button>
-        </div>
-      ) : displayRecipes.length === 0 && searchQuery.trim() ? (
-        <div className={styles.empty}>
-          <p className={styles.emptyTitle}>No recipes found for &ldquo;{searchQuery.trim()}&rdquo;</p>
-          <button className={styles.emptyClearBtn} onClick={() => setSearchQuery("")}>
-            Clear search
-          </button>
-        </div>
-      ) : displayRecipes.length === 0 ? (
-        <div className={styles.empty}>
-          <p className={styles.emptyTitle}>No recipes match these filters</p>
-          <button
-            className={styles.emptyClearBtn}
-            onClick={() => { setActiveTags([]); setTab("all"); }}
-          >
-            Clear filters
-          </button>
-        </div>
-      ) : (
-        <div className={styles.grid}>
-          {displayRecipes.map((r) => (
-            <RecipeCard
-              key={r.id}
-              recipe={r}
-              isDeleting={deletingIds.has(r.id)}
-              onToggleFavorite={handleToggleFavorite}
-              onEdit={handleEditOpen}
-              onDelete={handleDeleteOpen}
-              onLogCook={(recipe) => setCookLogRecipe(recipe)}
-              cookInfo={cookSummaryMap[r.id]}
-              onRate={handleRateRecipe}
-            />
-          ))}
-        </div>
+      {loadError === "no_connection" && (
+        <ErrorState
+          icon="🔌"
+          heading="Can't connect to the database"
+          body="Check that NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set correctly in your Vercel environment variables. You can find these in your Supabase project under Settings → API."
+          onRetry={() => window.location.reload()}
+        />
       )}
+
+      {loadError === "no_tables" && (
+        <ErrorState
+          icon="🗄️"
+          heading="Database tables not set up yet"
+          body="Run the schema.sql file in your Supabase SQL Editor to create the required tables. See SETUP.md for instructions."
+          onRetry={() => window.location.reload()}
+        />
+      )}
+
+      {loadError === "unknown" && (
+        <ErrorState
+          icon="😅"
+          heading="Something went wrong"
+          body="Try refreshing the page. If the problem persists, check the Vercel deployment logs."
+          onRetry={() => window.location.reload()}
+          retryLabel="Refresh"
+        />
+      )}
+
+      {!loadError && <>
+        <nav className={styles.tabs}>
+          <div className={styles.tabsInner}>
+            {(["all", "to_try", "made_it", "favorite"] as Tab[]).map((t) => {
+              const labels: Record<Tab, string> = {
+                all: "All",
+                to_try: "To Try",
+                made_it: "Made It",
+                favorite: "Favorites",
+              };
+              const counts: Record<Tab, number> = {
+                all: allCount,
+                to_try: toTryCount,
+                made_it: madeItCount,
+                favorite: favCount,
+              };
+              return (
+                <button
+                  key={t}
+                  className={`${styles.tab} ${tab === t ? styles.tabActive : ""}`}
+                  onClick={() => setTab(t)}
+                >
+                  {labels[t]} <span className={styles.tabCount}>({counts[t]})</span>
+                </button>
+              );
+            })}
+          </div>
+        </nav>
+
+        <FilterBar activeTags={activeTags} onChange={setActiveTags} />
+
+        {loading ? (
+          <SkeletonGrid />
+        ) : recipes.length === 0 ? (
+          <div className={styles.empty}>
+            <span className={styles.emptyIcon}>🍳</span>
+            <p className={styles.emptyTitle}>No recipes yet!</p>
+            <p className={styles.emptySub}>Add your first recipe to get started.</p>
+            <button className={styles.emptyAddBtn} onClick={() => setAddOpen(true)}>
+              Add a recipe
+            </button>
+          </div>
+        ) : displayRecipes.length === 0 && searchQuery.trim() ? (
+          <div className={styles.empty}>
+            <p className={styles.emptyTitle}>No recipes found for &ldquo;{searchQuery.trim()}&rdquo;</p>
+            <button className={styles.emptyClearBtn} onClick={() => setSearchQuery("")}>
+              Clear search
+            </button>
+          </div>
+        ) : displayRecipes.length === 0 ? (
+          <div className={styles.empty}>
+            <p className={styles.emptyTitle}>No recipes match these filters</p>
+            <button
+              className={styles.emptyClearBtn}
+              onClick={() => { setActiveTags([]); setTab("all"); }}
+            >
+              Clear filters
+            </button>
+          </div>
+        ) : (
+          <div className={styles.grid}>
+            {displayRecipes.map((r) => (
+              <RecipeCard
+                key={r.id}
+                recipe={r}
+                isDeleting={deletingIds.has(r.id)}
+                onToggleFavorite={handleToggleFavorite}
+                onEdit={handleEditOpen}
+                onDelete={handleDeleteOpen}
+                onLogCook={(recipe) => setCookLogRecipe(recipe)}
+                cookInfo={cookSummaryMap[r.id]}
+                onRate={handleRateRecipe}
+              />
+            ))}
+          </div>
+        )}
+      </>}
 
       <button className={styles.fab} onClick={() => setAddOpen(true)} aria-label="Add recipe">
         +
